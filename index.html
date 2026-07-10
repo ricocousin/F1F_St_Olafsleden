@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pilegrimsleden · Selånger → Nidaros</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #141416;
+      --sidebar:  #1C1C1E;
+      --border:   #2C2C2E;
+      --text:     #F0EAD6;
+      --muted:    #8C8C8C;
+      --accent:   #C8A84B;
+      --route:    #8B2635;
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: Georgia, serif; background: var(--bg); color: var(--text); display: flex; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 272px; min-width: 272px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow-y: auto; z-index: 1000;
+      transition: transform .25s ease;
+    }
+
+    #sb-header {
+      padding: 18px 16px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    #sb-header .eyebrow {
+      font-family: sans-serif; font-size: 10px;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 4px;
+    }
+    #sb-header h1 {
+      font-size: 20px; font-style: italic; font-weight: 700;
+      color: var(--text); line-height: 1.15;
+    }
+    #sb-header .meta {
+      font-family: sans-serif; font-size: 11px;
+      color: var(--muted); margin-top: 5px;
+    }
+
+    /* section shells */
+    .sb-section {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sb-section h3 {
+      font-family: sans-serif; font-size: 9.5px;
+      letter-spacing: .13em; text-transform: uppercase;
+      color: var(--muted); font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    /* layer toggles */
+    .lyr-row {
+      display: flex; align-items: center; gap: 9px;
+      padding: 5px 0; cursor: pointer;
+      font-family: sans-serif; font-size: 12.5px; color: var(--text);
+      user-select: none;
+    }
+    .lyr-row input[type=checkbox] {
+      accent-color: var(--accent); width: 13px; height: 13px; cursor: pointer; flex-shrink: 0;
+    }
+    .dot {
+      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* day pills */
+    #pill-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+    .dpill {
+      padding: 3px 9px; border-radius: 12px; font-size: 11px;
+      font-family: sans-serif; cursor: pointer;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); transition: all .15s;
+    }
+    .dpill:hover { border-color: var(--accent); color: var(--accent); }
+    .dpill.on { background: var(--accent); color: #000; border-color: var(--accent); }
+
+    /* day info panel */
+    #day-panel { flex: 1; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+    #day-panel h3 {
+      font-family: sans-serif; font-size: 9.5px;
+      letter-spacing: .13em; text-transform: uppercase;
+      color: var(--muted); font-weight: 600; margin-bottom: 10px;
+    }
+    #day-info { font-family: sans-serif; font-size: 12px; color: var(--muted); line-height: 1.65; }
+    .di-title { font-size: 14px; font-weight: 600; color: var(--text); font-family: Georgia, serif; margin-bottom: 7px; }
+    .di-stats { display: flex; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+    .di-stat { color: var(--accent); font-size: 12px; }
+    .di-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 10px; font-weight: 600; margin-bottom: 9px;
+    }
+    .di-kv { margin-top: 8px; }
+    .di-kv b { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #666; margin-bottom: 2px; }
+
+    /* footer */
+    #sb-footer {
+      padding: 11px 16px;
+      border-top: 1px solid var(--border);
+      font-family: sans-serif; font-size: 10.5px; color: var(--muted);
+    }
+    #sb-footer a { color: var(--accent); text-decoration: none; }
+
+    /* map */
+    #map { flex: 1; height: 100vh; }
+
+    /* ── Leaflet popup overrides ── */
+    .leaflet-popup-content-wrapper {
+      background: #1C1C1E; color: #F0EAD6;
+      border: 1px solid #2C2C2E; border-radius: 9px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.55); padding: 0;
+    }
+    .leaflet-popup-tip-container { display: none; }
+    .leaflet-popup-content { margin: 0; min-width: 210px; max-width: 270px; }
+    .leaflet-popup-close-button { color: #666 !important; right: 8px !important; top: 6px !important; }
+
+    .pu { padding: 13px 15px; font-family: sans-serif; }
+    .pu-cat { font-size: 9.5px; letter-spacing: .11em; text-transform: uppercase; color: #666; margin-bottom: 3px; }
+    .pu h4 { font-size: 14.5px; font-weight: 600; color: #F0EAD6; font-family: Georgia, serif; margin-bottom: 6px; }
+    .pu p { font-size: 11.5px; color: #AEAEB2; line-height: 1.55; }
+    .pu-tags { margin-top: 9px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .tag {
+      padding: 2px 7px; border-radius: 9px;
+      font-size: 10px; font-weight: 600;
+    }
+
+    /* marker icon base */
+    .mi {
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; border: 2px solid rgba(255,255,255,.55);
+      box-shadow: 0 2px 8px rgba(0,0,0,.45);
+      line-height: 1; cursor: pointer;
+    }
+
+    /* mobile */
+    #mob-btn {
+      display: none; position: fixed; top: 12px; left: 12px;
+      z-index: 2001; background: #1C1C1E;
+      border: 1px solid #2C2C2E; color: #F0EAD6;
+      border-radius: 8px; padding: 8px 13px;
+      font-family: sans-serif; font-size: 13px; cursor: pointer;
+      align-items: center; gap: 6px;
+    }
+
+    @media (max-width: 700px) {
+      #sidebar {
+        position: fixed; left: 0; top: 0; height: 100vh;
+        transform: translateX(-100%); z-index: 2000;
+      }
+      #sidebar.open { transform: translateX(0); }
+      #mob-btn { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+<button id="mob-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Lag</button>
+
+<div id="sidebar">
+  <div id="sb-header">
+    <div class="eyebrow">Pilegrimsleden</div>
+    <h1>Selånger →<br>Nidaros</h1>
+    <div class="meta">~600 km &nbsp;·&nbsp; 10 dager &nbsp;·&nbsp; bivvy</div>
+  </div>
+
+  <div class="sb-section">
+    <h3>Kartlag</h3>
+    <label class="lyr-row"><input type="checkbox" id="l-bivvy"    checked onchange="tog('bivvy')">   <span class="dot" style="background:#27AE60"></span>🏕 Optimale bivvyplasser</label>
+    <label class="lyr-row"><input type="checkbox" id="l-camp"     checked onchange="tog('camp')">    <span class="dot" style="background:#52BE80"></span>⛺ Foreslåtte campingplasser</label>
+    <label class="lyr-row"><input type="checkbox" id="l-water"    checked onchange="tog('water')">   <span class="dot" style="background:#2980B9"></span>💧 Vann &amp; nødvendige stopp</label>
+    <label class="lyr-row"><input type="checkbox" id="l-food"     checked onchange="tog('food')">    <span class="dot" style="background:#E67E22"></span>🍽 Matstopp</label>
+    <label class="lyr-row"><input type="checkbox" id="l-passport" checked onchange="tog('passport')"><span class="dot" style="background:#8E44AD"></span>📖 Pilegrimsstempler</label>
+    <label class="lyr-row"><input type="checkbox" id="l-swim"     checked onchange="tog('swim')">    <span class="dot" style="background:#00BCD4"></span>🏊 St. Olavs badesjøer</label>
+    <label class="lyr-row"><input type="checkbox" id="l-warn"     checked onchange="tog('warn')">    <span class="dot" style="background:#E74C3C"></span>⚠️ Krevende etapper</label>
+  </div>
+
+  <div class="sb-section">
+    <h3>Hopp til dag</h3>
+    <div id="pill-wrap"></div>
+  </div>
+
+  <div id="day-panel">
+    <h3>Dagsinfo</h3>
+    <div id="day-info" style="color:#555;font-style:italic;font-size:12px;">
+      Klikk en dag-knapp eller markør for detaljer.
+    </div>
+  </div>
+
+  <div id="sb-footer">
+    🛤 <a href="https://ricocousin.github.io/pilegrimsleden" target="_blank">ricocousin.github.io/pilegrimsleden</a><br>
+    <span style="margin-top:3px;display:block">Koordinater er omtrentlige — verifiser mot GPS/GPX</span>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ════════════════════════════════════════════
+//  MAP INIT
+// ════════════════════════════════════════════
+const map = L.map('map', { center:[63.05,13.8], zoom:7, zoomControl:true });
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom:19
+}).addTo(map);
+
+// ════════════════════════════════════════════
+//  ROUTE (day segments, colour-coded)
+// ════════════════════════════════════════════
+const segs = [
+  { d:1,  c:'#4CAF50', pts:[[62.433,17.227],[62.390,17.075],[62.348,17.019],[62.384,16.578],[62.458,16.357],[62.510,16.158]] },
+  { d:2,  c:'#8BC34A', pts:[[62.510,16.158],[62.530,16.105],[62.617,15.802],[62.748,15.431]] },
+  { d:3,  c:'#CDDC39', pts:[[62.748,15.431],[62.867,15.310],[62.954,15.197],[63.003,14.941],[63.083,14.820]] },
+  { d:4,  c:'#FFC107', pts:[[63.083,14.820],[63.133,14.717],[63.177,14.637],[63.280,14.595],[63.393,14.545]] },
+  { d:5,  c:'#FF9800', pts:[[63.393,14.545],[63.365,14.210],[63.351,13.927],[63.375,13.680],[63.390,13.473],[63.395,13.280],[63.398,13.081]] },
+  { d:6,  c:'#FF7043', pts:[[63.398,13.081],[63.380,12.840],[63.370,12.638],[63.395,12.418],[63.413,12.198],[63.425,12.097]] },
+  { d:7,  c:'#F44336', pts:[[63.425,12.097],[63.458,11.973],[63.498,11.883],[63.550,11.690],[63.600,11.510],[63.648,11.303],[63.680,11.288],[63.720,11.272]] },
+  { d:8,  c:'#E91E63', pts:[[63.720,11.272],[63.740,11.172],[63.753,11.072],[63.768,11.003],[63.785,10.920],[63.802,10.833]] },
+  { d:9,  c:'#9C27B0', pts:[[63.802,10.833],[63.720,10.903],[63.650,10.915],[63.555,10.918],[63.462,10.928],[63.415,10.845],[63.383,10.783]] },
+  { d:10, c:'#673AB7', pts:[[63.383,10.783],[63.405,10.650],[63.432,10.520],[63.430,10.448],[63.427,10.397]] }
+];
+
+segs.forEach(s => {
+  L.polyline(s.pts, { color:s.c, weight:4.5, opacity:.82, smoothFactor:1.5 })
+   .addTo(map)
+   .bindTooltip(`Dag ${s.d}`, { sticky:true, className:'leaflet-tooltip' });
+});
+
+// ════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════
+function icon(emoji, bg, sz=30) {
+  return L.divIcon({
+    html:`<div class="mi" style="background:${bg};width:${sz}px;height:${sz}px;font-size:${Math.round(sz*.43)}px">${emoji}</div>`,
+    className:'', iconSize:[sz,sz], iconAnchor:[sz/2,sz/2], popupAnchor:[0,-sz/2]
+  });
+}
+
+function pu(cat, title, desc, tags=[], ac='#C8A84B') {
+  const ts = tags.map(t=>`<span class="tag" style="background:${ac}22;color:${ac};border:1px solid ${ac}55">${t}</span>`).join('');
+  return `<div class="pu"><div class="pu-cat">${cat}</div><h4>${title}</h4><p>${desc}</p><div class="pu-tags">${ts}</div></div>`;
+}
+
+// ════════════════════════════════════════════
+//  DATA LAYERS
+// ════════════════════════════════════════════
+
+// ── BIVVY (optimal) ──────────────────────────
+const bivvyPts = [
+  { p:[62.510,16.158], n:'Fränsta skogsrand', d:'Ly i tett furuskog øst for Fränsta. Flatt terreng, godt vindvern. Vann fra bekk 200 m øst. Dag 1 endepunkt (70,7 km).', day:1 },
+  { p:[62.748,15.431], n:'Nær Bräcke kyrka', d:'Åpen slette nær den historiske kirken. Tradisjonelt pilgrims-hvilested. Fyll vann i landsbyen. Dag 2 endepunkt (58,7 km).', day:2 },
+  { p:[63.083,14.820], n:'Indalsälven-engen', d:'Flat elveslette ved Indalsälven. En av de vakreste ville campingplassene på ruten. Godt vann fra elva (filtrer). Dag 3 endepunkt (67,8 km).', day:3 },
+  { p:[63.393,14.545], n:'Alsen skogslyng', d:'Stille skogholt nær Alsen. Etter det store Östersund-innkjøpet. Godt sted å pakke sekken for D5-fjellpushet. Dag 4 endepunkt (71,8 km).', day:4 },
+  { p:[63.398,13.081], n:'Åre campingplass', d:'Bruk campinganlegget i Åre for fasiliteter etter en brutal 3 043 m høydemetere-dag. Dusj tilgjengelig. Siste natt før grensepassering. Dag 5 endepunkt (67,6 km).', day:5, warn:true },
+  { p:[63.425,12.097], n:'Skalstugan', d:'Fjellstue-område ved Skalstugan. Pakk mat for 2 dager her fra Åre-forsyningene. Siste pålitelige punkt før Sul-grensepasseringen i morgen. Dag 6 endepunkt (55,3 km).', day:6 },
+  { p:[63.720,11.272], n:'Stiklestad monumentet', d:'Leir nær det historiske Stiklestad-stedet — der Kong Olav II falt i 1030. Kraftfullt sted. Dag 7 endepunkt etter den hardeste etappen (60,4 km, 3 072 m stigning, grensepassering).', day:7, warn:true },
+  { p:[63.802,10.833], n:'Borås/Rådal furuskog', d:'Lunt skogsholt sør for Borås. Godt underlag, noe vindvern. Dag 8 endepunkt (67,9 km, 2 255 m stigning).', day:8 },
+  { p:[63.383,10.783], n:'Mostadmark skogslyng', d:'Skoglys i Mostadmark etter siste store klatring (1 630 m stigning). Kort avslutningsetappe i morgen — Nidaros ligger 32 km unna. Dag 9 endepunkt (47,8 km).', day:9 },
+];
+
+// ── SUGGESTED CAMPS ──────────────────────────
+const campPts = [
+  { p:[62.384,16.578], n:'Stöde kirkeområde', d:'Kirkeområdet er tradisjonelt åpent for pilgrimer. Spør lokalt. Godt midtpunkts-hvilested på Dag 1.', day:1 },
+  { p:[62.617,15.802], n:'Skog nær Ånge', d:'Blandet skog med flate områder. Godt Dag 2-alternativ hvis energien er lav.', day:2 },
+  { p:[62.867,15.310], n:'Gällö utkant', d:'Jordbruksgrense nær Gällö. Be om tillatelse fra lokale bønder — svenskene er generelt imøtekommende.', day:3 },
+  { p:[63.177,14.487], n:'Storsjön strandlinje, Östersund', d:'Storsjøens strandlinje nær byen. Urbant leir med vakre utsikter over sjøen og gamlebyen.', day:4 },
+  { p:[63.390,13.473], n:'Hålland skog', d:'Skogområde nær Hålland FØR den store stigningen. ⚠️ FYLL ALT VANN HER før Åre-klatringen.', day:5, warn:true },
+  { p:[63.370,12.638], n:'Tännforsen-området', d:'Nær det majestetiske fossen. Åpent terreng. Kan være vindutsatt — god bivvybag-øvelse. Kaldt om natten.', day:6 },
+  { p:[63.550,11.690], n:'Norske grensefjellet', d:'Villmarkscamping i åpent norsk terreng etter Sul-grensepasseringen. Bær 2L+ vann — ingen tjenester på 27 km.', day:7, warn:true },
+  { p:[63.648,11.303], n:'Vuku-området', d:'Etter innkjøp i Vuku-butikken. Marker sør for landsbyen. D7-kveldsalternativ hvis Stiklestad er for langt.', day:7 },
+  { p:[63.753,11.072], n:'Munkeby ruiner', d:'Nær ruinene av det 1100-talls cisterciensiske klosteret. Historisk villmarkscamping. Vann fra bekk i nærheten.', day:8 },
+  { p:[63.462,10.928], n:'Lånke/Vaernes', d:'Nær Vaernes lufthavn. Siste butikk før Mostadmark. Kjøp mat og fyll vann her for D9–D10.', day:9 },
+];
+
+// ── WATER & RESUPPLY ─────────────────────────
+const waterPts = [
+  { p:[62.458,16.357], n:'Bekk før Fränsta', d:'Liten bekkekryssing. God vannkilde. Filtrer anbefalt.', crit:false },
+  { p:[62.748,15.431], n:'Bräcke kran', d:'Landsbykran nær Bräcke kirke. Pålitelig drikkevann.', crit:false },
+  { p:[63.083,14.820], n:'Brunflo — elvevann', d:'Ferskvann fra Indalsälven. Filtrer. Godt sted å fylle opp.', crit:false },
+  { p:[63.177,14.637], n:'Östersund ★ BEST FORSYNING', d:'Beste bybesøk på ruten. Supermarked, utstyrsbutikk (Naturkompaniet e.l.), apotek. Fyll sekken for Dag 5-fjellpushet. Ta ut ekstra mat. ★ KRITISK STOPP ★', crit:true },
+  { p:[63.390,13.473], n:'Hålland — FYLL ALT VANN', d:'⚠️ KRITISK: Fyll alle vannbeholdere her. 1 463 m stigning foran på vei til Åre uten pålitelige vannkilder. Bekker kan være tørre om sommeren. Minimum 2 liter.', crit:true },
+  { p:[63.398,13.081], n:'Åre ★ Stor forsyning', d:'Siste store svenske by før grensen. Pakk mat for 2 dager (Dag 6 + Dag 7). Sjekk utstyr. Utstyrsbutikk og supermarked tilgjengelig. ★ KRITISK STOPP ★', crit:true },
+  { p:[63.413,12.198], n:'Medstugan fjellstue', d:'Fjellstue. Varm mat og ly. 45 km inn i Dag 6 — unne deg litt.', crit:false },
+  { p:[63.648,11.303], n:'Vuku-butikken', d:'49 km inn i Dag 7. Første forsyning etter grensepasseringen. Varm mat hvis du er heldig. Fyll vannflasker.', crit:false },
+  { p:[63.462,10.928], n:'Lånke/Vaernes ★ SISTE BUTIKK', d:'⚠️ SISTE BUTIKK før Nidaros. 22 km inn i Dag 9. Fyll opp for 2 dagers mat. Fyll alle vannbeholdere før Mostadmark-klatringen (1 630 m stigning).', crit:true },
+  { p:[63.432,10.520], n:'Ranheim kafé', d:'19 km inn i Dag 10. Siste stopp før Nidaros (13 km igjen). Kaffe og bakst — du fortjener det!', crit:false },
+];
+
+// ── FOOD STOPS ───────────────────────────────
+const foodPts = [
+  { p:[62.348,17.019], n:'Matfors', d:'Lite tettsted med servicemuligheter. Stopp for mat og drikke 17,5 km ut på Dag 1.' },
+  { p:[62.384,16.578], n:'Stöde — lunsjstopp', d:'Lunsjstopp 44 km ut på Dag 1. Lokale servicetilbud.' },
+  { p:[62.954,15.197], n:'Gällö — matpause', d:'Matpause 27 km ut på Dag 3. Kafé/butikk tilgjengelig.' },
+  { p:[63.003,14.941], n:'Pilgrimstad kafé', d:'Liten kafé i "Pilegrimbyen". Fyll flasker og ta et hvil. Sesongåpent — sjekk åpningstider. Pilegrims­museum.' },
+  { p:[63.351,13.927], n:'Mörsil — varm middag', d:'Varm middag i Mörsil. Restaurant/kafé. 26 km inn i Dag 5. Siste pålitelige mat før Hålland.' },
+  { p:[63.370,12.638], n:'Tännforsen fossen kafé', d:'Kafé ved det majestetiske Tännforsen-fossen (38 m høy, Skandinavias kraftigste). 22 km inn i Dag 6. Påfyll og nyt utsikten.' },
+  { p:[63.768,11.003], n:'Markabygda snacksstopp', d:'Snacks og lett forsyning i Markabygda. 45 km inn i Dag 8.' },
+];
+
+// ── PASSPORT STAMPS ──────────────────────────
+const passportPts = [
+  { p:[62.433,17.227], n:'Selångers kyrka — START', d:'Hent din Pilegrimsbok (pilegrims­pass) her. Skriv deg inn i registeret. Første stempel. Ferden begynner.', s:1 },
+  { p:[62.384,16.578], n:'Stöde kyrka', d:'Stempel tilgjengelig ved kirken. Middelalderkirke på St. Olavs-ruten. Sjekk åpningstider — vanligvis ubetjent, men stempelkasse ute.', s:2 },
+  { p:[62.748,15.431], n:'Bräcke kyrka', d:'Stempel­stasjon ved Bräcke kirke. Tradisjonelt pilegrimsstopp langs ruten.', s:3 },
+  { p:[63.003,14.941], n:'Pilgrimstad', d:'Oppkalt etter pilegrimer selv — "Pilegrimbyen." Stempel tilgjengelig. Lite museum dedikert til ruten.', s:4 },
+  { p:[63.083,14.820], n:'Brunflo kyrka', d:'Stempel ved Brunflo kirke. Dag 3-endepunkt-området.', s:5 },
+  { p:[63.177,14.637], n:'Östersunds domkyrka', d:'Katedralstempel i Östersund. Stor stempel­stasjon. Spør ved pilegrimssenteret.', s:6 },
+  { p:[63.398,13.081], n:'Åre gamla kyrka', d:'Stempel ved Åres middelalderskirke (1100-tall). Et av de vakreste stempler-stopp på ruten.', s:7 },
+  { p:[63.720,11.272], n:'Stiklestad ★ NORGE', d:'Stor stempel­stasjon. Stiklestad er der Kong Olav II (St. Olav) falt i 1030 — det åndelige hjertet i pilegrimsferden. Museum og kirke. ★★★', s:8 },
+  { p:[63.427,10.397], n:'Nidaros domkirke — MÅL', d:'Siste stempel og Pilegrimsbevis. Pilegrimssenteret ved siden av katedralen. Presenter ditt fullt stemplede pass. ~600 km fullført.', s:9 },
+];
+
+// ── SWIM SPOTS ───────────────────────────────
+const swimPts = [
+  { p:[62.510,16.100], n:'Faxälven elvesvømming', d:'Elvesvømming nær Fränsta/Faxälven. Kaldt og forfriskende etter Dag 1. Tradisjonelt badested.', lake:'Faxälven' },
+  { p:[63.177,14.500], n:'Storsjön, Östersund', d:'Storsjøen ved Östersund. Rent, stort innlandsvatn. Utpekte badeplasser nær byen. Perfekt kveldssvøm på Dag 4. Hjemsted for "Storsjöodjuret" (en norsk sjømonster-legende!).', lake:'Storsjön' },
+  { p:[63.280,14.540], n:'Alsensjön', d:'Liten innsjø nær Alsen. Stille sted. God for et kveldsdukkert på Dag 4 før fjell-dagene.', lake:'Alsensjön' },
+  { p:[63.398,13.060], n:'Åresjön', d:'Innsjøen ved Åre resort. Kalt fjellvann. Restitusjonssvøm etter Dag 5. Godt vedlikeholdt badeplass.', lake:'Åresjön' },
+  { p:[63.680,11.200], n:'Verdalselva', d:'Elv i Verdal-dalen nær Stiklestad. Tradisjonelt badested. Kaldt norsk vann.', lake:'Verdalselva' },
+];
+
+// ── WARNINGS ─────────────────────────────────
+const warnPts = [
+  { p:[63.392,13.300], n:'⚠️ Hålland → Åre-klatring', d:'+1 463 m stigning i ett segment. Tidlig start (før daggry) er essensielt. Ingen vann etter Hålland. Hardeste enkelt­klatring i Sverige på denne ruten. Plan: forlat Alsen i tussmørket.', seg:'Dag 5' },
+  { p:[63.550,11.750], n:'⚠️ Sul → Vuku — hardeste etappe', d:'+1 781 m stigning over 27,3 km. Den absolutt hardeste etappen på hele ruten. Daggry­start krevet. Bær 2L+ vann — ingen tjenester. Norsk grensepassering ved Sul.', seg:'Dag 7' },
+  { p:[63.420,10.870], n:'⚠️ Lånke → Mostadmark', d:'+1 630 m stigning. Siste store klatring på ferden. Fyll opp i Lånke-butikken (siste butikk) før denne stigningen. Du er nesten fremme.', seg:'Dag 9' },
+];
+
+// ════════════════════════════════════════════
+//  BUILD LAYER GROUPS
+// ════════════════════════════════════════════
+const LYR = {};
+
+LYR.bivvy = L.layerGroup();
+bivvyPts.forEach(d => {
+  const tags = [`Dag ${d.day}`]; if(d.warn) tags.push('⚠️ Krevende dag');
+  L.marker(d.p, {icon:icon('🏕','#1B5E20')})
+   .bindPopup(pu('OPTIMAL BIVVY', d.n, d.d, tags, '#27AE60'))
+   .addTo(LYR.bivvy);
+});
+
+LYR.camp = L.layerGroup();
+campPts.forEach(d => {
+  const tags = [`Dag ${d.day}`]; if(d.warn) tags.push('⚠️ Advarsel');
+  L.marker(d.p, {icon:icon('⛺','#2D6A4F')})
+   .bindPopup(pu('FORESLÅTT CAMP', d.n, d.d, tags, '#52BE80'))
+   .addTo(LYR.camp);
+});
+
+LYR.water = L.layerGroup();
+waterPts.forEach(d => {
+  const sz = d.crit ? 34 : 29;
+  const bg = d.crit ? '#0D47A1' : '#1565C0';
+  L.marker(d.p, {icon:icon('💧', bg, sz)})
+   .bindPopup(pu('VANN / FORSYNING', d.n, d.d, d.crit ? ['★ KRITISK'] : [], '#2980B9'))
+   .addTo(LYR.water);
+});
+
+LYR.food = L.layerGroup();
+foodPts.forEach(d => {
+  L.marker(d.p, {icon:icon('🍽','#7D3C00')})
+   .bindPopup(pu('MATSTOPP', d.n, d.d, [], '#E67E22'))
+   .addTo(LYR.food);
+});
+
+LYR.passport = L.layerGroup();
+passportPts.forEach(d => {
+  const sz = (d.s === 1 || d.s === 9) ? 36 : 29;
+  L.marker(d.p, {icon:icon('📖','#4A235A', sz)})
+   .bindPopup(pu(`PILEGRIMSSTEMPEL #${d.s}/9`, d.n, d.d, [`Stempel ${d.s}`], '#8E44AD'))
+   .addTo(LYR.passport);
+});
+
+LYR.swim = L.layerGroup();
+swimPts.forEach(d => {
+  L.marker(d.p, {icon:icon('🏊','#004D56')})
+   .bindPopup(pu('ST. OLAVS BADESJØ', d.n, d.d, [d.lake], '#00BCD4'))
+   .addTo(LYR.swim);
+});
+
+LYR.warn = L.layerGroup();
+warnPts.forEach(d => {
+  L.marker(d.p, {icon:icon('⚠️','#7B241C', 34)})
+   .bindPopup(pu(`KREVENDE ETAPPE · ${d.seg}`, d.n, d.d, [d.seg,'Planlegg nøye'], '#E74C3C'))
+   .addTo(LYR.warn);
+});
+
+// Special: start & finish
+L.marker([62.433,17.227], {icon:icon('🏁','#111',40), zIndexOffset:1000})
+ .addTo(map)
+ .bindPopup(pu('START', 'Selångers kyrka', 'Hent pilegrimsboken din her. Skriv deg inn i registeret. Første stempel. Ruten til Nidaros begynner her.', ['Dag 0','Hent pass'], '#C8A84B'));
+
+L.marker([63.427,10.397], {icon:icon('⛪','#7D5A00',42), zIndexOffset:1000})
+ .addTo(map)
+ .bindPopup(pu('MÅL', 'Nidaros domkirke, Trondheim', 'Slutten på pilegrimsferden. Hent siste stempel og Pilegrimsbevis ved pilegrimssenteret ved katedralen. ~600 km fullført!', ['Dag 10','MÅL','Bevis her'], '#C8A84B'));
+
+// Add all layers to map
+Object.values(LYR).forEach(l => l.addTo(map));
+
+// ════════════════════════════════════════════
+//  TOGGLE
+// ════════════════════════════════════════════
+function tog(key) {
+  document.getElementById('l-'+key).checked ? LYR[key].addTo(map) : map.removeLayer(LYR[key]);
+}
+
+// ════════════════════════════════════════════
+//  DAY PILLS & INFO PANEL
+// ════════════════════════════════════════════
+const DAYS = [
+  { d:1,  f:'Selånger',    t:'Fränsta',           km:70.7, eg:1288, diff:'Moderat',       stops:'Matfors (17,5 km) · Stöde (44 km)',                        bivvy:'Furuskog øst for Fränsta',      c:[62.470,16.680], w:false },
+  { d:2,  f:'Fränsta',     t:'Bräcke',            km:58.7, eg:1493, diff:'Moderat',       stops:'Borgsjö · Länsgränsen (bekk)',                              bivvy:'Nær Bräcke kyrka',              c:[62.620,15.780], w:false },
+  { d:3,  f:'Bräcke',      t:'Brunflo',           km:67.8, eg:1836, diff:'Krevende',      stops:'Gällö (27 km) · Pilgrimstad kafé (45 km)',                  bivvy:'Indalsälven-engen',             c:[62.918,15.060], w:false },
+  { d:4,  f:'Brunflo',     t:'Alsen',             km:71.8, eg:1544, diff:'Moderat',       stops:'Östersund ★ BEST FORSYNING (15 km) · Rödön · Nälden',      bivvy:'Alsen skogslyng',               c:[63.240,14.590], w:false },
+  { d:5,  f:'Alsen',       t:'Åre',               km:67.6, eg:3043, diff:'⚠️ Svært hardt', stops:'Mörsil varm middag (26 km) · FYLL VANN Hålland (45 km)',   bivvy:'Åre campingplass',              c:[63.394,13.760], w:true  },
+  { d:6,  f:'Åre',         t:'Skalstugan',        km:55.3, eg:994,  diff:'Krevende',      stops:'Pakk 2 dagersmat i Åre · Tännforsen kafé (22 km) · Medstugan (45 km)', bivvy:'Skalstugan', c:[63.412,12.590], w:false },
+  { d:7,  f:'Skalstugan',  t:'Stiklestad',        km:60.4, eg:3072, diff:'⚠️ Svært hardt', stops:'Sul/Riksgränsen grense (21 km) · Vuku-butikk (49 km)',      bivvy:'Stiklestad monumentet',         c:[63.572,11.677], w:true  },
+  { d:8,  f:'Stiklestad',  t:'Borås/Rådal',       km:67.9, eg:2255, diff:'Krevende',      stops:'Munkeby ruiner/vann (21 km) · Markabygda (45 km)',           bivvy:'Furuskog Borås/Rådal',          c:[63.760,11.052], w:false },
+  { d:9,  f:'Borås/Rådal', t:'Mostadmark',        km:47.8, eg:2187, diff:'Krevende',      stops:'Lånke/Vaernes ★ SISTE BUTIKK (22 km) — fyll vann',         bivvy:'Mostadmark skogslyng',          c:[63.623,10.880], w:false },
+  { d:10, f:'Mostadmark',  t:'Nidaros domkirke',  km:31.9, eg:830,  diff:'Moderat',       stops:'Ranheim kafé (19 km) · 13 km igjen',                        bivvy:'— Nidaros! 🎉',                 c:[63.405,10.590], w:false },
+];
+
+const pw = document.getElementById('pill-wrap');
+const di = document.getElementById('day-info');
+
+DAYS.forEach(d => {
+  const b = document.createElement('button');
+  b.className = 'dpill'; b.textContent = `D${d.d}`;
+  b.onclick = () => {
+    document.querySelectorAll('.dpill').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    showDay(d);
+  };
+  pw.appendChild(b);
+});
+
+function showDay(d) {
+  const wc = d.w ? '#E74C3C' : '#27AE60';
+  const wb = d.w ? '#7B241C22' : '#1B5E2022';
+  di.innerHTML = `
+    <div class="di-title">Dag ${d.d}: ${d.f} → ${d.t}</div>
+    <div class="di-stats">
+      <span class="di-stat">📏 ${d.km} km</span>
+      <span class="di-stat">↑ ${d.eg.toLocaleString()} m</span>
+    </div>
+    <span class="di-badge" style="background:${wb};color:${wc};border:1px solid ${wc}44">${d.diff}</span>
+    <div class="di-kv"><b>Nøkkelstopp</b>${d.stops}</div>
+    <div class="di-kv"><b>Bivvy</b>${d.bivvy}</div>
+  `;
+  map.setView(d.c, 9, {animate:true});
+}
+</script>
+</body>
+</html>
