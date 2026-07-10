@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>St. Olavsleden · Dagskort</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    :root{--bg:#0C0C0E;--card:#161618;--border:#222226;--text:#F0EAD6;--muted:#6E6E73;--accent:#C8A84B;--green:#27AE60;--red:#E74C3C}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia,serif;overflow:hidden}
+
+    /* ── Top bar ── */
+    #topbar{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 14px 0}
+    .tb-eyebrow{font-family:sans-serif;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:3px}
+    .tb-main{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+    #day-title{font-size:17px;font-style:italic;line-height:1.2}
+    .tb-nav{display:flex;gap:6px;flex-shrink:0}
+    .tb-btn{background:var(--card);border:1px solid var(--border);color:var(--text);width:30px;height:30px;border-radius:8px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .tb-btn:disabled{opacity:.25;cursor:default}
+    #prog-track{height:3px;background:var(--border);border-radius:2px;margin-bottom:7px}
+    #prog-fill{height:100%;border-radius:2px;transition:width .4s ease,background .4s ease}
+    #pill-strip{display:flex;gap:5px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+    #pill-strip::-webkit-scrollbar{display:none}
+    .dpill{flex-shrink:0;padding:3px 10px;border-radius:11px;font-family:sans-serif;font-size:11px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s}
+    .dpill.on{color:#000;border-color:transparent;font-weight:700}
+
+    /* ── Main scroll ── */
+    #main{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding-top:118px;padding-bottom:72px}
+
+    /* ── Map ── */
+    #map-wrap{height:230px;position:relative}
+    #map{height:100%;width:100%}
+    #map-overlay{position:absolute;top:8px;right:8px;z-index:500;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+    .map-pill{background:rgba(12,12,14,.85);border:1px solid var(--border);color:var(--accent);font-family:sans-serif;font-size:10.5px;padding:4px 9px;border-radius:6px;text-decoration:none;white-space:nowrap}
+
+    /* ── Card body ── */
+    #card{padding:13px 14px}
+
+    /* Date row */
+    .date-row{display:flex;align-items:center;gap:8px;font-family:sans-serif;font-size:11px;color:var(--muted);margin-bottom:12px}
+    #start-date{background:var(--card);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:11px;font-family:sans-serif}
+    #trip-date{color:var(--accent)}
+
+    /* Stats strip */
+    .stats{display:flex;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
+    .sc{flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)}
+    .sc:last-child{border-right:none}
+    .sv{font-size:16px;font-weight:700;color:var(--text)}
+    .sl{font-family:sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-top:2px}
+
+    /* Sun bar */
+    .sun{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:12px;gap:8px;font-family:sans-serif;font-size:12px}
+    .sun-t{white-space:nowrap}
+    .sun-bar{flex:1;height:4px;background:var(--border);border-radius:2px;position:relative}
+    .sun-fill{position:absolute;top:0;height:100%;background:linear-gradient(90deg,#FF8C42,#FFD166,#FF8C42);border-radius:2px;transition:width .4s}
+
+    /* Weather */
+    #wx{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:12px;font-family:sans-serif}
+    .wx-head{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px}
+    .wx-row{display:flex;gap:12px;flex-wrap:wrap}
+    .wx-item{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--text)}
+
+    /* Section label */
+    .sec{font-family:sans-serif;font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px;margin-top:4px}
+
+    /* Stops */
+    #stops{}
+    .stop{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+    .stop:last-child{border-bottom:none}
+    .s-km{font-family:sans-serif;font-size:11px;font-weight:700;color:var(--accent);min-width:36px;padding-top:1px}
+    .s-ico{font-size:15px;padding-top:1px}
+    .s-body{flex:1}
+    .s-name{font-family:sans-serif;font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+    .s-note{font-family:sans-serif;font-size:11px;color:var(--muted);line-height:1.45}
+
+    /* Callout cards */
+    .callout{border-radius:9px;padding:10px 12px;margin-bottom:12px;font-family:sans-serif;font-size:12px;color:var(--muted);line-height:1.5}
+    .callout b{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+    .c-green{background:var(--card);border:1px solid #27AE6033;border-left:3px solid var(--green)}
+    .c-green b{color:var(--green)}
+    .c-red{background:var(--card);border:1px solid #E74C3C33;border-left:3px solid var(--red)}
+    .c-red b{color:var(--red)}
+    .c-neutral{background:var(--card);border:1px solid var(--border)}
+    .c-neutral b{color:var(--muted)}
+
+    /* Bottom nav */
+    #bot{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--bg) 38%);padding:18px 14px 14px;display:flex;gap:8px;z-index:900}
+    .nb{flex:1;padding:12px;border-radius:11px;font-family:sans-serif;font-size:13px;font-weight:600;border:1px solid var(--border);cursor:pointer;background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;gap:5px;transition:background .15s,color .15s}
+    .nb:disabled{opacity:.25;cursor:default}
+    .nb.pri{background:var(--accent);color:#000;border-color:var(--accent)}
+
+    /* Leaflet popup */
+    .leaflet-popup-content-wrapper{background:#1a1a1c;color:#F0EAD6;border:1px solid #2c2c2e;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.5);padding:0}
+    .leaflet-popup-tip{background:#1a1a1c}
+    .leaflet-popup-content{margin:9px 12px;font-family:sans-serif;font-size:12px;line-height:1.5}
+    .leaflet-popup-close-button{color:#555!important;right:7px!important;top:5px!important}
+    .leaflet-control-attribution{font-size:9px!important}
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="tb-eyebrow">St. Olavsleden · Dagskort</div>
+  <div class="tb-main">
+    <div id="day-title">Dag 1: Selånger → Borgsjö</div>
+    <div class="tb-nav">
+      <button class="tb-btn" id="btn-p" onclick="go(-1)">‹</button>
+      <button class="tb-btn" id="btn-n" onclick="go(1)">›</button>
+    </div>
+  </div>
+  <div id="prog-track"><div id="prog-fill"></div></div>
+  <div id="pill-strip"></div>
+</div>
+
+<div id="main">
+  <div id="map-wrap">
+    <div id="map"></div>
+    <div id="map-overlay">
+      <a href="index.html" class="map-pill">🗺 Oversiktskart</a>
+      <span class="map-pill" id="map-km-label" style="color:var(--text)">—</span>
+    </div>
+  </div>
+
+  <div id="card">
+    <div class="date-row">
+      Startdato:&nbsp;<input type="date" id="start-date" onchange="onDateChange()">
+      <span id="trip-date"></span>
+    </div>
+
+    <div class="stats">
+      <div class="sc"><div class="sv" id="s-km">—</div><div class="sl">km</div></div>
+      <div class="sc"><div class="sv" id="s-t">—</div><div class="sl">Est. tid</div></div>
+      <div class="sc"><div class="sv" id="s-d">—</div><div class="sl">Dag</div></div>
+      <div class="sc"><div class="sv" id="s-c">—</div><div class="sl">Totalt</div></div>
+    </div>
+
+    <div class="sun">
+      <div class="sun-t">🌅 <span id="sr">—</span></div>
+      <div class="sun-bar"><div class="sun-fill" id="sf"></div></div>
+      <div class="sun-t"><span id="ss">—</span> 🌇</div>
+    </div>
+
+    <div id="wx">
+      <div class="wx-head">Vær · <span id="wx-loc">—</span></div>
+      <div id="wx-body" class="wx-row"><span style="color:var(--muted);font-style:italic;font-size:12px">Sett startdato for å se varsel</span></div>
+    </div>
+
+    <div class="sec">Nøkkelstopp</div>
+    <div id="stops"></div>
+
+    <div style="margin-top:12px" id="bivvy-c"></div>
+    <div id="warn-c"></div>
+    <div id="note-c"></div>
+  </div>
+</div>
+
+<div id="bot">
+  <button class="nb" id="nb-p" onclick="go(-1)">← Forrige</button>
+  <button class="nb pri" id="nb-n" onclick="go(1)">Neste →</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ═══════════════════════════════════
+//  DATA
+// ═══════════════════════════════════
+const CUM=[0,76,148,218,284,348,408,466,520,572,620];
+
+const D=[
+{d:1,f:'Selånger',t:'Borgsjö',km:76,c:'#4CAF50',mid:[62.47,16.66],
+ route:[[62.433,17.227],[62.390,17.075],[62.348,17.019],[62.384,16.578],[62.458,16.357],[62.510,16.158],[62.530,16.105]],
+ stops:[
+  {km:17,n:'Matfors',i:'🍽',note:'Lunsjstopp. Butikk og kafé. Fyll vann.',t:'food'},
+  {km:43,n:'Stöde',i:'📖',note:'Pilegrimsstempel ved Stöde kyrka.',t:'stamp'},
+  {km:71,n:'Fränsta',i:'💧',note:'Siste servicer før camp. Fyll vann.',t:'water'},
+  {km:76,n:'Borgsjö',i:'🏕',note:'Bivvy i skogholt.',t:'bivvy'},
+ ],
+ bivvy:'Skogholt øst for Borgsjö. Flat mark og vindvern fra trær. Bekk 200 m.',
+ warn:null,
+ note:'Første dag — start rolig. Kroppen er fersk men moralen er høy. Spar deg.'},
+
+{d:2,f:'Borgsjö',t:'nær Gällö',km:72,c:'#8BC34A',mid:[62.73,15.56],
+ route:[[62.530,16.105],[62.537,15.921],[62.629,15.641],[62.754,15.417],[62.914,15.232]],
+ stops:[
+  {km:22,n:'Länsgränsen',i:'💧',note:'Bekk ved fylkesgrensen. Fyll vann (filtrer).',t:'water'},
+  {km:43,n:'Bräcke',i:'📖',note:'Pilegrimsstempel ved Bräcke kyrka. Vann og servicer.',t:'stamp'},
+  {km:72,n:'Nær Gällö',i:'🏕',note:'Bivvy i furuskogen nord for Gällö.',t:'bivvy'},
+ ],
+ bivvy:'Furuskogen nord for Gällö. Flatt og tørt underlag. Bekk nær.',
+ warn:null,
+ note:'Vakker skogsdag med gradvise stigninger. God dag å finne rytme.'},
+
+{d:3,f:'Gällö',t:'Östersund',km:70,c:'#CDDC39',mid:[63.07,14.91],
+ route:[[62.914,15.232],[62.960,15.027],[63.003,14.941],[63.091,14.820],[63.177,14.637]],
+ stops:[
+  {km:17,n:'Pilgrimstad',i:'📖',note:'Pilegrimsstempel og lite museum. Kafé. Oppkalt etter pilegrimer!',t:'stamp'},
+  {km:40,n:'Brunflo',i:'📖',note:'Stempel ved Brunflo kyrka.',t:'stamp'},
+  {km:70,n:'Östersund ★',i:'🏙',note:'BESTE FORSYNINGSSTOPP. Supermarked, utstyrsbutikk, apotek. Fyll opp for D5-fjellpushet.',t:'city'},
+ ],
+ bivvy:'Bruk Östersund: campingplass eller urban bivvy ved Storsjøen.',
+ warn:null,
+ note:'Avslutt i Östersund. Bruk kvelden: riktig mat, last sekken for D5-fjellene, sjekk utstyr.'},
+
+{d:4,f:'Östersund',t:'Mörsil',km:66,c:'#FFC107',mid:[63.27,14.00],
+ route:[[63.177,14.637],[63.246,14.412],[63.348,14.253],[63.345,14.176],[63.383,13.947],[63.351,13.927]],
+ stops:[
+  {km:19,n:'Rödön',i:'💧',note:'Elveovergang. Vann tilgjengelig.',t:'water'},
+  {km:37,n:'Nälden',i:'🍽',note:'Servicer og snacks. Halvveis.',t:'food'},
+  {km:66,n:'Mörsil',i:'🍽',note:'Varm middag. Siste serveringssted før Åre-klatringen.',t:'food'},
+ ],
+ bivvy:'Skogscamp nær Mörsil. Forbered deg mentalt: i morgen kommer de store høydemetrene.',
+ warn:null,
+ note:'Nyt den siste mer flate etappen. Fjellene begynner å dukke opp i horisonten.'},
+
+{d:5,f:'Mörsil',t:'Åre',km:64,c:'#FF9800',mid:[63.37,13.50],
+ route:[[63.351,13.927],[63.375,13.680],[63.390,13.473],[63.395,13.280],[63.398,13.081]],
+ stops:[
+  {km:23,n:'Hålland ⚠️',i:'💧',note:'FYLL ALT VANN HER. +1 463 m stigning foran mot Åre. Ingen vann på strekningen. Minimum 2 liter.',t:'critical'},
+  {km:64,n:'Åre ★',i:'🏙',note:'Campingplass med dusj. Supermarked og utstyrsbutikk. Pakk 2 dagersmat for D6+D7.',t:'city'},
+ ],
+ bivvy:'Åre campingplass. Ta dusjen. Siste fasiliteter til Stiklestad.',
+ warn:'Hålland → Åre: +1 463 m høydemeter. Start i tussmørket. Drikk og spis godt ved Hålland — ingen sjanser etterpå.',
+ note:'Dagens hardeste klatring. Fyll ALL vann ved Hålland — ingen unntak.'},
+
+{d:6,f:'Åre',t:'Skalstugan',km:60,c:'#FF7043',mid:[63.41,12.59],
+ route:[[63.398,13.081],[63.380,12.840],[63.370,12.638],[63.395,12.418],[63.413,12.198],[63.425,12.097]],
+ stops:[
+  {km:0,n:'Åre (start)',i:'🛒',note:'Pakk 2 dagersmat her — D6 og D7. Siste by-servicer til Stiklestad.',t:'city'},
+  {km:13,n:'Tännforsen',i:'🏊',note:'Skandinavias kraftigste foss (38 m). Kafé. Tradisjonelt pilegrimsbad — iskaldt og obligatorisk!',t:'swim'},
+  {km:33,n:'Medstugan',i:'🍽',note:'Fjellstue med varm mat og ly. 33 km inn — unne deg det.',t:'food'},
+  {km:60,n:'Skalstugan',i:'🏕',note:'Siste punkt i Sverige. Fyll vann. I morgen: grensepassering.',t:'bivvy'},
+ ],
+ bivvy:'Skalstugan fjellstue-området. Fyll vann til 2L+ for morgendagens grenseklatring.',
+ warn:null,
+ note:'Vakker fjelldag. Tännforsen er et høydepunkt. Spar energi — D7 er ruten sin hardeste dag.'},
+
+{d:7,f:'Skalstugan',t:'Stiklestad',km:58,c:'#F44336',mid:[63.57,11.68],
+ route:[[63.425,12.097],[63.458,11.973],[63.498,11.883],[63.550,11.690],[63.600,11.510],[63.648,11.303],[63.720,11.272]],
+ stops:[
+  {km:21,n:'Sul / Riksgränsen ⚠️',i:'🇳🇴',note:'NORSK GRENSE. Ingen tjenester de neste 28 km. Bær 2L+ vann. Spis og hvil her.',t:'critical'},
+  {km:49,n:'Vuku',i:'🛒',note:'Første norske butikk etter grensen. Varm mat mulig. Fyll vann.',t:'food'},
+  {km:58,n:'Stiklestad ★★★',i:'📖',note:'Kong Olav II falt her i 1030. Pilegrimsstempel. Historisk monument og museum.',t:'stamp'},
+ ],
+ bivvy:'Nær Stiklestad-monumentet. En av de kraftigste nettene på turen. Du er i Norge.',
+ warn:'HARDESTE ETAPPE: +1 781 m over 27 km etter Sul. DAGGRYSTART (04:30–05:00). Ingen tjenester 28 km etter grensen. 2L vann minimum.',
+ note:'Sett alarm til 04:00. Vær på vei ut av Skalstugan i grålysninga. Grensepasseringen er ruten sin største utfordring.'},
+
+{d:8,f:'Stiklestad',t:'Rådal/Borås',km:54,c:'#E91E63',mid:[63.72,11.20],
+ route:[[63.720,11.272],[63.740,11.172],[63.753,11.072],[63.768,11.003],[63.785,10.920],[63.802,10.833]],
+ stops:[
+  {km:21,n:'Munkeby ruiner',i:'💧',note:'1100-talls cistercienserkloster. Bekk ved ruinene. Historisk stopp verdt en pause.',t:'water'},
+  {km:45,n:'Markabygda',i:'🍽',note:'Snacks og lett forsyning. Halvveis mellom Stiklestad og Rådal.',t:'food'},
+  {km:54,n:'Rådal/Borås',i:'🏕',note:'Furuskogsbivvy. Godt skjermet.',t:'bivvy'},
+ ],
+ bivvy:'Lunt furuskogsholt sør for Borås. Godt underlag etter tunge dager.',
+ warn:null,
+ note:'Kroppen kjenner det nå — men distansen minsker. Trondheim begynner å føles mulig.'},
+
+{d:9,f:'Rådal/Borås',t:'Mostadmark',km:52,c:'#9C27B0',mid:[63.59,10.87],
+ route:[[63.802,10.833],[63.720,10.903],[63.650,10.915],[63.555,10.918],[63.462,10.928],[63.415,10.845],[63.383,10.783]],
+ stops:[
+  {km:22,n:'Lånke / Vaernes ★',i:'🛒',note:'SISTE BUTIKK FØR NIDAROS. Fyll alt vann. Mat for D9+D10. Siste sjanse for ekstra kalorier.',t:'critical'},
+  {km:52,n:'Mostadmark',i:'🏕',note:'Skogslyng. I morgen: Nidaros domkirke.',t:'bivvy'},
+ ],
+ bivvy:'Skogslyng ved Mostadmark. Spis godt. I morgen er siste dag.',
+ warn:'Mostadmark-klatringen: +1 630 m. Siste store klatring på turen. Fyll opp alt i Lånke.',
+ note:'Nest siste dag. 52 km og siste store klatring. 48 km igjen til pilegrimsbeviset.'},
+
+{d:10,f:'Mostadmark',t:'Nidaros domkirke',km:48,c:'#C8A84B',mid:[63.41,10.59],
+ route:[[63.383,10.783],[63.405,10.650],[63.432,10.520],[63.430,10.448],[63.427,10.397]],
+ stops:[
+  {km:36,n:'Ranheim',i:'☕',note:'Kafé. Siste kaffe. 12 km igjen. Ta deg god tid.',t:'food'},
+  {km:48,n:'Nidaros domkirke ★★★★★',i:'⛪',note:'MÅL. Hent Pilegrimsbevis hos pilegrimssenteret. ~620 km fullført.',t:'finish'},
+ ],
+ bivvy:'— Du er i Trondheim. Finn hotell og seng. Dusjvann og varmt måltid fortjent.',
+ warn:null,
+ note:'Siste dag. Korteste dag. Gå inn i Trondheim sakte og la det synke inn. Katedralen venter.'},
+];
+
+// ═══════════════════════════════════
+//  STATE
+// ═══════════════════════════════════
+let cur=0, map, routeLine, mkrs=[], startDate=null;
+const wxCache={};
+
+// ═══════════════════════════════════
+//  INIT
+// ═══════════════════════════════════
+function init(){
+  // Pills
+  const strip=document.getElementById('pill-strip');
+  D.forEach((d,i)=>{
+    const b=document.createElement('button');
+    b.className='dpill';b.id=`p${i}`;b.textContent=`D${d.d}`;
+    b.onclick=()=>go2(i);strip.appendChild(b);
+  });
+
+  // Default date: next Sep 1
+  const now=new Date();
+  let sd=new Date(now.getFullYear(),8,1);
+  if(sd<now) sd=new Date(now.getFullYear()+1,8,1);
+  document.getElementById('start-date').value=sd.toISOString().slice(0,10);
+  startDate=sd;
+
+  // Map
+  map=L.map('map',{zoomControl:false,attributionControl:true});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:18,attribution:'© OpenStreetMap'
+  }).addTo(map);
+
+  // Full faint route background
+  const all=D.flatMap(d=>d.route);
+  L.polyline(all,{color:'#2a2a2e',weight:2.5,opacity:.9}).addTo(map);
+
+  go2(0);
+}
+
+// ═══════════════════════════════════
+//  NAVIGATE
+// ═══════════════════════════════════
+function go(dir){const n=cur+dir;if(n>=0&&n<D.length)go2(n);}
+
+function go2(i){
+  cur=i;
+  const d=D[i];
+
+  document.getElementById('day-title').textContent=`Dag ${d.d}: ${d.f} → ${d.t}`;
+  document.getElementById('btn-p').disabled=i===0;
+  document.getElementById('btn-n').disabled=i===D.length-1;
+  document.getElementById('nb-p').disabled=i===0;
+  const nn=document.getElementById('nb-n');
+  nn.disabled=false;
+  nn.textContent=i===D.length-1?'⛪ Nidaros!':'Neste →';
+  nn.className='nb'+(i===D.length-1?' pri':' pri');
+
+  // Progress
+  const pct=((CUM[i]+d.km)/620*100).toFixed(1);
+  const pf=document.getElementById('prog-fill');
+  pf.style.width=pct+'%';pf.style.background=d.c;
+
+  // Pills
+  D.forEach((_,j)=>{
+    const p=document.getElementById(`p${j}`);
+    p.classList.toggle('on',j===i);
+    p.style.background=j===i?D[j].c:'';
+  });
+  document.getElementById(`p${i}`)?.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+
+  // Stats
+  const h=(d.km*10/60).toFixed(0);
+  document.getElementById('s-km').textContent=d.km;
+  document.getElementById('s-t').textContent=`~${h}t`;
+  document.getElementById('s-d').textContent=`D${d.d}/10`;
+  document.getElementById('s-c').textContent=`${CUM[i+1]}km`;
+  document.getElementById('map-km-label').textContent=`${d.km}km dag`;
+
+  // Date & sun
+  onDateChange();
+
+  // Map
+  updateMap(d);
+
+  // Stops
+  document.getElementById('stops').innerHTML=d.stops.map(s=>`
+    <div class="stop">
+      <div class="s-km">${s.km}km</div>
+      <div class="s-ico">${s.i}</div>
+      <div class="s-body">
+        <div class="s-name">${s.n}</div>
+        <div class="s-note">${s.note}</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('bivvy-c').innerHTML=
+    `<div class="callout c-green"><b>🏕 Bivvy / Leir</b>${d.bivvy}</div>`;
+
+  document.getElementById('warn-c').innerHTML=d.warn
+    ?`<div class="callout c-red"><b>⚠️ Advarsel</b>${d.warn}</div>`:'';
+
+  document.getElementById('note-c').innerHTML=d.note
+    ?`<div class="callout c-neutral"><b>Dagsnote</b>${d.note}</div>`:'';
+
+  document.getElementById('main').scrollTo({top:0,behavior:'smooth'});
+}
+
+// ═══════════════════════════════════
+//  MAP
+// ═══════════════════════════════════
+function updateMap(d){
+  if(routeLine) map.removeLayer(routeLine);
+  mkrs.forEach(m=>map.removeLayer(m));mkrs=[];
+
+  routeLine=L.polyline(d.route,{color:d.c,weight:5.5,opacity:.92}).addTo(map);
+
+  // Start dot
+  addDot(d.route[0],'#fff',d.f);
+  // End dot
+  addDot(d.route[d.route.length-1],d.c,d.t);
+
+  // Stop markers (skip bivvy at end)
+  d.stops.filter(s=>s.t!=='bivvy').forEach(s=>{
+    const pos=lerp(d.route,s.km/d.km);
+    const ico=L.divIcon({html:`<div style="font-size:16px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.8))">${s.i}</div>`,
+      className:'',iconSize:[20,20],iconAnchor:[10,10]});
+    const m=L.marker(pos,{icon:ico})
+      .bindPopup(`<b>${s.n}</b><br><small>${s.km}km · ${s.note}</small>`)
+      .addTo(map);
+    mkrs.push(m);
+  });
+
+  map.fitBounds(routeLine.getBounds(),{padding:[24,24]});
+}
+
+function addDot(pos,color,label){
+  const ico=L.divIcon({
+    html:`<div style="width:10px;height:10px;border-radius:50%;background:${color};border:2px solid rgba(0,0,0,.5);box-shadow:0 0 6px ${color}"></div>`,
+    className:'',iconSize:[10,10],iconAnchor:[5,5]});
+  const m=L.marker(pos,{icon:ico}).bindPopup(label).addTo(map);
+  mkrs.push(m);
+}
+
+function lerp(route,f){
+  const n=route.length,idx=Math.min(Math.floor(f*(n-1)),n-2);
+  const t=f*(n-1)-idx,a=route[idx],b=route[idx+1];
+  return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+}
+
+// ═══════════════════════════════════
+//  DATE / SUN
+// ═══════════════════════════════════
+function onDateChange(){
+  const v=document.getElementById('start-date').value;
+  if(!v)return;
+  startDate=new Date(v+'T12:00:00');
+  const d=D[cur];
+  const date=new Date(startDate);date.setDate(date.getDate()+cur);
+  document.getElementById('trip-date').textContent=
+    date.toLocaleDateString('no-NO',{weekday:'short',day:'numeric',month:'short'});
+  const {sr,ss,hrs}=sunTimes(d.mid[0],d.mid[1],date);
+  document.getElementById('sr').textContent=sr;
+  document.getElementById('ss').textContent=ss;
+  document.getElementById('sf').style.width=(hrs/24*100).toFixed(0)+'%';
+  fetchWx(d,date);
+}
+
+function sunTimes(lat,lon,date){
+  const D2R=Math.PI/180,R2D=180/Math.PI;
+  const doy=Math.round((date-new Date(date.getFullYear(),0,0))/864e5);
+  const decl=23.45*Math.sin(D2R*(360/365)*(doy-81));
+  const cosHA=(Math.cos(D2R*90.833)-Math.sin(D2R*lat)*Math.sin(D2R*decl))
+             /(Math.cos(D2R*lat)*Math.cos(D2R*decl));
+  const fmt=h=>{h=((h%24)+24)%24;const H=Math.floor(h),M=Math.round((h-H)*60);return`${String(H).padStart(2,'0')}:${String(M<60?M:0).padStart(2,'0')}`};
+  if(cosHA>1) return{sr:'Polarnatt',ss:'—',hrs:0};
+  if(cosHA<-1) return{sr:'00:00',ss:'24:00',hrs:24};
+  const HA=R2D*Math.acos(cosHA);
+  const B=(360/365)*(doy-81);
+  const EqT=9.87*Math.sin(D2R*2*B)-7.53*Math.cos(D2R*B)-1.5*Math.sin(D2R*B);
+  const noon=12-lon/15-EqT/60;
+  return{sr:fmt(noon-HA/15),ss:fmt(noon+HA/15),hrs:HA/15*2};
+}
+
+// ═══════════════════════════════════
+//  WEATHER (met.no)
+// ═══════════════════════════════════
+async function fetchWx(d,date){
+  const el=document.getElementById('wx-body');
+  const loc=document.getElementById('wx-loc');
+  loc.textContent=`${d.mid[0].toFixed(1)}°N, D${d.d}`;
+  const diff=(date-new Date())/864e5;
+  if(diff>9||diff<-1){
+    el.innerHTML=`<span style="color:var(--muted);font-style:italic;font-size:12px">Varsel tilgjengelig innen 9 dager</span>`;
+    return;
+  }
+  const key=`${d.mid[0].toFixed(1)}_${d.mid[1].toFixed(1)}`;
+  if(wxCache[key]){renderWx(wxCache[key],date,el);return;}
+  el.innerHTML=`<span style="color:var(--muted);font-size:12px">Henter vær…</span>`;
+  try{
+    const r=await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${d.mid[0].toFixed(2)}&lon=${d.mid[1].toFixed(2)}`);
+    const data=await r.json();wxCache[key]=data;renderWx(data,date,el);
+  }catch(e){
+    el.innerHTML=`<a href="https://www.yr.no" target="_blank" style="color:var(--accent);font-family:sans-serif;font-size:12px">Sjekk yr.no →</a>`;
+  }
+}
+
+function renderWx(data,date,el){
+  try{
+    const target=date.toISOString().slice(0,10)+'T06:00:00Z';
+    const ts=data.properties.timeseries;
+    const entry=ts.find(t=>t.time>=target)||ts[0];
+    const ins=entry.data.instant.details;
+    const n6=entry.data.next_6_hours;
+    const sym=n6?.summary?.symbol_code||'';
+    const ico=sym.includes('clearsky')?'☀️':sym.includes('fair')?'🌤':sym.includes('partly')?'⛅':
+              sym.includes('cloudy')?'☁️':sym.includes('rain')?'🌧':sym.includes('snow')?'❄️':'🌤';
+    el.innerHTML=`
+      <div class="wx-item">${ico} <b>${Math.round(ins.air_temperature)}°C</b></div>
+      <div class="wx-item">💨 ${Math.round(ins.wind_speed)}m/s</div>
+      <div class="wx-item">🌧 ${(n6?.details?.precipitation_amount??0).toFixed(1)}mm</div>
+      <div class="wx-item">💦 ${Math.round(ins.relative_humidity)}%</div>`;
+  }catch(e){
+    el.innerHTML=`<a href="https://www.yr.no" target="_blank" style="color:var(--accent);font-family:sans-serif;font-size:12px">Sjekk yr.no →</a>`;
+  }
+}
+
+// ═══════════════════════════════════
+//  SWIPE
+// ═══════════════════════════════════
+let tx=0;
+const main=document.getElementById('main');
+main.addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+main.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>55)go(dx<0?1:-1)},{passive:true});
+
+init();
+</script>
+</body>
+</html>
