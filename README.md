@@ -1,114 +1,157 @@
-# Pilegrimsleden — Selånger → Nidaros
+# F1F_St_Olafsleden — Selånger → Nidaros
 
-Interactive map for a 10-day pilgrimage run along the St. Olav's Way from **Selånger, Sweden** to **Nidaros Cathedral, Trondheim, Norway** (~600 km, bivvy camping throughout).
+Interactive web app for planning and running the **St. Olavsleden / Pilegrimsleden** pilgrimage route from **Selånger, Sweden** to **Nidaros Cathedral, Trondheim, Norway** (~620 km, 10 days, bivvy camping throughout).
 
-🗺 **Live map:** [ricocousin.github.io/F1F_St_Olafsleden](https://ricocousin.github.io/F1F_St_Olafsleden)
+🗺 **Oversiktskart:** [ricocousin.github.io/F1F_St_Olafsleden](https://ricocousin.github.io/F1F_St_Olafsleden)  
+📱 **Dagskort (field app):** [ricocousin.github.io/F1F_St_Olafsleden/app.html](https://ricocousin.github.io/F1F_St_Olafsleden/app.html)
 
 ---
 
 ## Route overview
 
-| Dag | Fra → Til | km | Stigning | Vanskelighet |
-|-----|-----------|-----|----------|--------------|
-| D1 | Selånger → Fränsta | 70.7 | 1 288 m | Moderat |
-| D2 | Fränsta → Bräcke | 58.7 | 1 493 m | Moderat |
-| D3 | Bräcke → Brunflo | 67.8 | 1 836 m | Krevende |
-| D4 | Brunflo → Alsen | 71.8 | 1 544 m | Moderat |
-| D5 | Alsen → Åre | 67.6 | 3 043 m | ⚠️ Svært hardt |
-| D6 | Åre → Skalstugan | 55.3 | 994 m | Krevende |
-| D7 | Skalstugan → Stiklestad | 60.4 | 3 072 m | ⚠️ Svært hardt |
-| D8 | Stiklestad → Borås/Rådal | 67.9 | 2 255 m | Krevende |
-| D9 | Borås/Rådal → Mostadmark | 47.8 | 2 187 m | Krevende |
-| D10 | Mostadmark → Nidaros | 31.9 | 830 m | Moderat |
-| **Totalt** | | **~600 km** | **~18 500 m** | |
+Distances decrease by ~3 km per day — shorter each day for motivational momentum.
+
+| Dag | Fra → Til | km | Vanskelighet |
+|-----|-----------|-----|--------------|
+| D1 | Selånger → Borgsjö | 76 | Moderat |
+| D2 | Borgsjö → nær Gällö | 72 | Moderat |
+| D3 | Gällö → Östersund | 70 | Moderat · ★ Storby-forsyning |
+| D4 | Östersund → Mörsil | 66 | Moderat |
+| D5 | Mörsil → Åre | 64 | ⚠️ Svært hardt · +1 463 m ved Hålland |
+| D6 | Åre → Skalstugan | 60 | Krevende · siste Sverige-etappe |
+| D7 | Skalstugan → Stiklestad | 58 | ⚠️ Hardeste dag · +1 781 m · grensepassering |
+| D8 | Stiklestad → Rådal/Borås | 54 | Krevende |
+| D9 | Rådal/Borås → Mostadmark | 52 | Krevende · +1 630 m · siste butikk Lånke |
+| D10 | Mostadmark → Nidaros | 48 | Moderat · målgang |
+| **Totalt** | | **~620 km** | **~18 500 m stigning (est.)** |
+
+> Stigningsdata er estimert — GPX-filer mangler høydedata (ele=0).
 
 ---
 
-## Map layers
+## Apper / filer
 
-| Layer | Innhold |
-|-------|---------|
-| 🏕 Optimale bivvyplasser | Confirmed sleep spots, one per day |
-| ⛺ Foreslåtte campingplasser | Backup options and alternative sites |
-| 💧 Vann & forsyning | Streams, taps, stores — critical stops starred |
-| 🍽 Matstopp | Cafés, restaurants, hot meal opportunities |
-| 📖 Pilegrimsstempler | Passport stamp stations, D0 pickup → D10 finish |
-| 🏊 St. Olavs badesjøer | Traditional swimming spots along the route |
-| ⚠️ Krevende etapper | The three brutal climb segments — plan carefully |
+### 📱 app.html — Dagskort (primær feltverktøy)
+Mobiloptimalisert kortvisning, én side per dag:
+- Swipe venstre/høyre mellom dager
+- Minikart zoomer til dagens segment
+- Statistikk: km · estimert tid · dag · totalt
+- Soloppgang/solnedgang beregnet fra koordinater og dato
+- Sanntidsvær fra api.met.no (gratis, ingen API-nøkkel, vises innen 9 dager før avgang)
+- Nøkkelstopp med km-markering, ikoner og notater
+- Bivvy-panel (grønt) · advarselspanel (rødt) · dagsnote
+
+### 🗺 index.html — Oversiktskart (planlegging)
+Interaktivt Leaflet-kart med 7 togglbare lag:
+
+| Lag | Innhold |
+|-----|---------|
+| 🏕 Optimale bivvyplasser | Én per dag, bekreftet overnattingssted |
+| ⛺ Foreslåtte campingplasser | Backup og alternative steder |
+| 💧 Vann & forsyning | Bekker, kraner, butikker — kritiske stopp merket |
+| 🍽 Matstopp | Kafeer, restauranter, varme måltider |
+| 📖 Pilegrimsstempler | 9 stempelstasjoner, D0 oppstart → D10 mål |
+| 🏊 St. Olavs badesjøer | Tradisjonelle badesjøer langs ruten |
+| ⚠️ Krevende etapper | De tre brutale stigningene |
 
 ---
 
-## Critical stops
+## Kritiske stopp
 
-| Stop | Dag | Hvorfor |
-|------|-----|---------|
-| **Östersund** | D4 | Best resupply city on the route. Gear shop, supermarket, pharmacy. Stock for D5. |
-| **Hålland** | D5 | Fill ALL water here. +1 463 m climb ahead with no reliable sources. |
-| **Åre** | D5/D6 | Last major Swedish town. Pack for D6 + D7 border crossing. |
-| **Sul / Riksgränsen** | D7 | Norway border crossing. No services for 27 km. Carry 2L+ water. |
-| **Lånke / Vaernes** | D9 | Last shop before Nidaros. Stock up for 2 days, fill water for Mostadmark climb. |
+| Stopp | Dag | Hvorfor |
+|-------|-----|---------|
+| **Östersund** | D3 | Beste forsyningsby. Supermarked, utstyrsbutikk, apotek. Fyll sekken for D5-fjellene. |
+| **Hålland** | D5 | Fyll ALT vann her. +1 463 m stigning foran — ingen pålitelig vann til Åre. |
+| **Åre** | D5/D6 | Siste store svenske by. Pack for D6 + D7 grensepassering. Dusj tilgjengelig. |
+| **Sul / Riksgränsen** | D7 | Norsk grense. Ingen tjenester de neste 28 km. Bær 2L+ vann. |
+| **Lånke / Vaernes** | D9 | Siste butikk før Nidaros. Fyll alt. |
+
+---
+
+## GPX-filer
+
+Offisielle GPX-filer fra Naturkartan / pilgrimsleden.se ligger i `/gpx/`.
+
+| Fil | Dekning | Status |
+|-----|---------|--------|
+| `selanger-borgsjo.gpx` | Selånger → Borgsjö | Kun ridning/sykling-varianter, ingen dedikert fotrute |
+| `borgsjo-ostersund.gpx` | Borgsjö → Östersund | Fotruter identifisert, Pilgrimstad→Brunflo mangler |
+| `ostersund-are.gpx` | Östersund → Åre | Delvis fotrute, Östersund→Rödön kun sykling |
+| `are-stiklestad.gpx` | Åre → Skalstugan | Mangler Skalstugan→Stiklestad (~65 km) |
+| `stiklestad-trondheim.gpx` | Stiklestad → Trondheim | ✅ Komplett, 7 segmenter, 143.9 km |
+
+**Viktig:** Ingen GPX-filer har høydedata (ele=0). Stigningsestimater er beregnet fra ekstern DEM.
 
 ---
 
 ## Stack
 
-- [Leaflet.js](https://leafletjs.com/) — interactive map
-- [OpenStreetMap](https://www.openstreetmap.org/) — map tiles
-- [GitHub Pages](https://pages.github.com/) — hosting (free)
-- Vanilla HTML/JS — no build step, no dependencies to install
+- [Leaflet.js](https://leafletjs.com/) — interaktivt kart
+- [OpenStreetMap](https://www.openstreetmap.org/) — kartfliser
+- [api.met.no](https://api.met.no/) — gratis værvarsling, ingen API-nøkkel
+- [GitHub Pages](https://pages.github.com/) — gratis hosting
+- Vanilla HTML/JS — ingen build-steg, ingen avhengigheter
 
 ---
 
-## Development
+## Utvikling
 
-All map data lives directly in `index.html` as JavaScript arrays. To add or edit points, find the relevant array near the top of the `<script>` block:
-
-```js
-const bivvyPts  = [ ... ];   // optimal bivvy sites
-const campPts   = [ ... ];   // suggested campsites
-const waterPts  = [ ... ];   // water & resupply
-const foodPts   = [ ... ];   // food stops
-const passportPts = [ ... ]; // stamp stations
-const swimPts   = [ ... ];   // swim spots
-const warnPts   = [ ... ];   // hard segment warnings
-```
-
-Each point follows this shape:
-```js
-{ p: [lat, lon], n: 'Name', d: 'Description', ...extras }
-```
-
-### Running locally
-No server needed — just open `index.html` in a browser.
-
+### Kjøre lokalt
 ```bash
 open index.html        # Mac
 start index.html       # Windows
 xdg-open index.html    # Linux
 ```
 
-### Deploying
-Push to `main`. GitHub Pages auto-deploys within ~60 seconds.
+### Deploye
+Push til `main` — GitHub Pages er live innen ~60 sekunder.
+
+### Commit-format
+```
+<type>: <kort sammendrag i imperativ>
+
+- detaljbullet
+```
+Typer: `feat` · `fix` · `data` · `docs` · `style` · `refactor`
+
+### Datastruktur
+
+**index.html** — kartlag som JS-arrays i `<script>`-blokken:
+```js
+const bivvyPts    = [ ... ];  // optimale bivvyplasser
+const campPts     = [ ... ];  // foreslåtte campingplasser
+const waterPts    = [ ... ];  // vann & forsyning
+const foodPts     = [ ... ];  // matstopp
+const passportPts = [ ... ];  // stempelstasjoner
+const swimPts     = [ ... ];  // badesjøer
+const warnPts     = [ ... ];  // krevende etapper
+```
+
+**app.html** — dagdata som array `D[]`, ett objekt per dag:
+```js
+{ d, from, to, km, color, mid, route, stops, bivvy, warn, note }
+```
 
 ---
 
-## Planned features
+## Planlagte funksjoner
 
-- [ ] GPX track overlay (actual recorded route)
-- [ ] More St. Olav swim lakes (Lodden)
-- [ ] Elevation profile chart
-- [ ] Offline PWA support (cache tiles for field use)
-- [ ] Day-by-day kcal / food weight breakdown panel
-- [ ] Filter by difficulty
+- [ ] GPX-sporgeometri lastet direkte inn i app.html fra `/gpx/`
+- [ ] Høydeprofil per dag (SVG-profilstripe i dagskortet)
+- [ ] Offline/PWA — cache kartfliser for feltbruk uten signal
+- [ ] Flere St. Olavs badesjøer (Lodden-innsjøer)
+- [ ] Kcal og matvarevekt per dag
+- [ ] Høydedata via Open-Elevation API
 
 ---
 
-## Coordinate accuracy
+## Koordinatnøyaktighet
 
-All coordinates are currently approximate — hand-placed based on route knowledge. They should be verified against:
-- Official Pilegrimsleden GPX files
+Rutepunkter er foreløpig omtrentlige — manuelt plassert. Verifiser mot:
+- `/gpx/`-mappen i dette repoet
 - [pilegrimsleden.no](https://pilegrimsleden.no) / [pilgrimsleden.se](https://pilgrimsleden.se)
+- Strava/Komoot for Skalstugan→Stiklestad (mangler offisiell GPX)
 
 ---
 
-*Nidaros Cathedral, 1030 km from the first step. Gå vel.* 🛤
+*Nidaros domkirke, 1030 år etter at St. Olav gikk denne veien. Gå vel.* 🛤
