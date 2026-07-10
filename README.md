@@ -2,7 +2,7 @@
 
 Interactive map for a 10-day pilgrimage run along the St. Olav's Way from **Selånger, Sweden** to **Nidaros Cathedral, Trondheim, Norway** (~600 km, bivvy camping throughout).
 
-🗺 **Live map:** [ricocousin.github.io/pilegrimsleden](https://ricocousin.github.io/pilegrimsleden)
+🗺 **Live map:** [ricocousin.github.io/F1F_St_Olafsleden](https://ricocousin.github.io/F1F_St_Olafsleden)
 
 ---
 
