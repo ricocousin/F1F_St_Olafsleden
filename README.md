@@ -1,25 +1,23 @@
 # F1F_St_Olafsleden — Selånger → Nidaros
 
-Interactive web app for planning and running the **St. Olavsleden / Pilegrimsleden** pilgrimage route from **Selånger, Sweden** to **Nidaros Cathedral, Trondheim, Norway** (~647 km, 10 days, bivvy camping throughout).
+Interactive web app for planning and running the **St. Olavsleden / Pilegrimsleden** pilgrimage route from **Selånger, Sweden** to **Nidaros Cathedral, Trondheim, Norway** (~600 km, 10 days, bivvy camping throughout).
 
 🗺 **Overview map:** [ricocousin.github.io/F1F_St_Olafsleden](https://ricocousin.github.io/F1F_St_Olafsleden)
 📱 **Day cards (field app):** [ricocousin.github.io/F1F_St_Olafsleden/app.html](https://ricocousin.github.io/F1F_St_Olafsleden/app.html)
 
 ---
 
-## ⚠️ On distance: 580 km (official) vs. 647 km (this plan)
+## ⚠️ On distance: three different numbers, and which one we use
 
-stolavsleden.com and pilegrimsleden.no consistently list **580 km** as the total length. After loading the official GPX tracks (hiking-only variants, filtered out from riding/cycling) and chaining them together, we get **646.6 km** — nearly 70 km more.
+stolavsleden.com and pilegrimsleden.no consistently list **580 km** as the total length (marketing/rounded figure). Summing the official GPX tracks (hiking-only variants) gave us **646.6 km**. Neither of those turned out to be the number to plan around.
 
-We dug into this before trusting the number:
+stolavsleden.com also publishes an **itemized stage table** — every sub-segment of the route with exact distance *and* elevation gain. Summed, it comes to:
 
-- Raw GPS point noise contributes almost nothing (<0.4 km total across ~20,000 points) — not the explanation.
-- The sum of all hiking-tagged GPX segments is 570.2 km, plus ~16 km of real but small connector gaps between individual tracks (separate recordings that don't quite share an endpoint).
-- The Skalstugan→Stiklestad section (the border crossing) has no official GPX at all. We used stolavsleden.com's own stage breakdown for this section instead: Skalstugan–Riksgränsen–Sul 21.2 km + Sul–Vuku 27.3 km + Vuku–Stiklestad 11.9 km = **60.5 km**.
-- **570.2 + 16 + 60.5 ≈ 647 km.**
-- An independent third-party GPS tracker (the HiiKER app) reports the trail at approximately **623 km**, entirely independent of our calculation — same order of magnitude, same direction of deviation from 580.
+**600.1 km total, 18,542 m elevation gain.**
 
-**Conclusion:** "580 km" is most likely a rounded, long-standing marketing figure rather than a precisely GPS-measured distance. Real hiking distance is probably **620–650 km**. This app plans around the real 647 km, not the official 580 — better to over-provision food/water than under-provision.
+We cross-checked this against our GPX data segment by segment: **23 of 29 segments matched within half a kilometer** — strong mutual validation. The other 6 (concentrated around Gällö–Pilgrimstad–Brunflo and Munkeby–Markabygda–Rådal) were off by 2–19 km, most likely because the GPX "hiking" track there follows a longer scenic/alternate variant rather than today's direct official trail. The itemized table's total elevation gain (18,542 m) also matches this project's original estimate ("~18,500 m") almost exactly, from before any of this GPX work — a good independent confirmation that the table is trustworthy.
+
+**This app now plans against the official itemized table: 600.1 km, 18,542 m elevation gain** — the first time this project has had real elevation data rather than an estimate. The map lines still come from GPX geometry where it's accurate; the 6 mismatched stretches may show a slightly longer path on the map than the official straight-line distance used for planning.
 
 ---
 
@@ -27,21 +25,21 @@ We dug into this before trusting the number:
 
 Days are balanced to decrease steadily around two fixed anchors: **Östersund** (the only major resupply city, D3) and the **Skalstugan→Stiklestad border crossing** (D7, its own day since there's nowhere safe to camp mid-crossing).
 
-| Day        | From → To                       | Real km      | Difficulty                                                |
-| ---------- | -------------------------------- | ------------ | ------------------------------------------------------------ |
-| D1         | Selånger → near Fränsta          | 89           | Longest day of the trip — consider splitting in two            |
-| D2         | near Fränsta → near Gällö        | 83           | Forest terrain, steady climb                                   |
-| D3         | near Gällö → **Östersund ★**     | 77           | ★ Only major resupply city on the whole route                  |
-| D4         | Östersund → near Alsen           | 66           | Mountains start coming into view                                |
-| D5         | near Alsen → near Åre            | 62           | ⚠️ Hålland → Åre: climb with no water                          |
-| D6         | near Åre → Skalstugan            | 58           | Last stage in Sweden, Tännforsen                                |
-| D7         | Skalstugan → Stiklestad          | **60.5** ⚠️  | Hardest AND longest day · border crossing · no GPX             |
-| D8         | Stiklestad → near Rådal/Borås    | 53           | Body feels it, but distance is shrinking now                    |
-| D9         | near Rådal/Borås → near Mostadmark | 51         | Last shop at Lånke/Vaernes                                       |
-| D10        | near Mostadmark → **Nidaros**    | 49           | Shortest day — finish line                                      |
-| **Total**  |                                   | **~646.6 km** | |
+| Day        | From → To                            | Official km | Elevation gain | Notes                                                       |
+| ---------- | --------------------------------------- | ------------ | ---------------- | ------------------------------------------------------------- |
+| D1         | Selånger → near Fränsta                 | 76.8         | 1,288 m           | Follows the Ljungan river valley                               |
+| D2         | near Fränsta → Gällö                    | 70.8         | 2,054 m           | Most climbing of the first three days                          |
+| D3         | Gällö → **Östersund ★**                 | 64.8         | 1,500 m           | ★ Only major resupply city on the whole route                   |
+| D4         | Östersund → near Alsen                  | 63.9         | 1,319 m           | Mountains start coming into view                                 |
+| D5         | near Alsen → Åre                        | 59.9         | 3,043 m           | Biggest single climbing day before the border                    |
+| D6         | Åre → Skalstugan                        | 55.9         | 1,464 m           | Last stage in Sweden, Tännforsen waterfall                       |
+| D7         | Skalstugan → Stiklestad                 | **60.4** ⚠️  | **3,072 m**       | Hardest AND longest day · border crossing · no GPX                |
+| D8         | Stiklestad → near Markabygda            | 51.2         | 1,662 m           | Body feels the border day, but distance shrinks now               |
+| D9         | near Markabygda → Lånke/Vaernes         | 49.2         | 1,150 m           | Last shop before Nidaros                                          |
+| D10        | Lånke/Vaernes → **Nidaros**             | 47.2         | 2,460 m           | Shortest day, but a demanding final push                         |
+| **Total**  |                                          | **600.1 km** | **18,542 m**      | |
 
-> Elevation data is still estimated — the GPX files have no elevation data (ele=0).
+> All distances and elevation gain are from stolavsleden.com's official itemized stage table — real data, not estimates. One sub-segment (Tännforsen–Medstugan) is missing an official elevation figure and is estimated at ~470m within D6's total.
 
 ---
 
@@ -103,7 +101,7 @@ Official GPX files from Naturkartan / stolavsleden.se live in `/gpx/`. All five 
 
 **Skalstugan→Stiklestad (D7):** no official GPX exists anywhere we've found. The map line in the app is an approximation between known points (Skalstugan, Sul, Vuku, Stiklestad), scaled to match stolavsleden.com's official stage distance (60.5 km). **Verify against physical waymarking in the field** — don't blindly trust the map line through the border crossing.
 
-**Important:** none of the GPX files contain elevation data (ele=0). Elevation gain estimates are computed from an external DEM.
+**Important:** none of the GPX files contain elevation data (ele=0). Elevation gain per day now comes from stolavsleden.com's official itemized stage table (see distance section above), not from the GPX files.
 
 ---
 
@@ -155,10 +153,10 @@ const swimPts     = [ ... ];  // swimming lakes
 const warnPts     = [ ... ];  // demanding stages
 ```
 
-**app.html** — day data as array `D[]`, one object per day. `route` is real GPX geometry (except D7, flagged `est:true`). `km`, `mid`, and cumulative distance are computed in JS at load time from the `route` array — they're not stored as static numbers, specifically to prevent the map and stats from drifting out of sync again:
+**app.html** — day data as array `D[]`, one object per day. `route` is real GPX geometry (except D7, flagged `est:true`). `km` and `eg` (elevation gain) are the official stolavsleden.com stage figures, stored directly rather than derived from GPX. `mid` and cumulative distance are computed in JS at load time from the `route` array:
 
 ```
-{ d, f, t, c, est, route, stops, bivvy, warn, note }
+{ d, f, t, c, est, km, eg, route, stops, bivvy, warn, note }
 ```
 
 ---
@@ -174,4 +172,4 @@ const warnPts     = [ ... ];  // demanding stages
 
 ---
 
-*Nidaros Cathedral, ~647 km after St. Olav walked this way. Go well.* 🛤
+*Nidaros Cathedral, ~600 km after St. Olav walked this way. Go well.* 🛤
