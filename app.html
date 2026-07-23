@@ -9,168 +9,346 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--bg:#0C0C0E;--card:#161618;--border:#222226;--text:#F0EAD6;--muted:#9A9AA0;--accent:#C8A84B;--green:#27AE60;--red:#E74C3C;--blue:#3498DB}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia,serif;overflow:hidden}
-#topbar{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 14px 0}
-.tb-eyebrow{font-family:sans-serif;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:3px;display:flex;justify-content:space-between;align-items:center}
-.tb-main{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
-#day-title{font-size:17px;font-style:italic;line-height:1.2}
-.tb-nav{display:flex;gap:6px;flex-shrink:0}
-.tb-btn{background:var(--card);border:1px solid var(--border);color:var(--text);width:30px;height:30px;border-radius:8px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+/* ── Theme tokens. Dark is default (night use); [data-theme=light] is the
+   high-contrast daylight/field mode. Both are hand-tuned for legibility. ── */
+:root{
+  --bg:#0C0C0E;--card:#161618;--card2:#1e1e22;--border:#2c2c32;
+  --text:#F3EDDD;--muted:#ADACB3;--faint:#7C7B82;
+  --accent:#D8B85A;--accent-ink:#000;
+  --green:#41C46E;--red:#F2604A;--blue:#5CADE8;--amber:#EAAE43;
+  --shadow:0 6px 20px rgba(0,0,0,.45);--sun1:#FF8C42;--sun2:#FFD166;
+  --head-h:170px;
+}
+:root[data-theme="light"]{
+  --bg:#FAF8F1;--card:#FFFFFF;--card2:#F0EDE2;--border:#C7C1AF;
+  --text:#141310;--muted:#54503F;--faint:#6E6A58;
+  --accent:#7A5A05;--accent-ink:#fff;
+  --green:#0F6E32;--red:#A81E06;--blue:#0D5FA0;--amber:#7A4E00;
+  --shadow:0 4px 14px rgba(60,50,20,.14);--sun1:#E4720F;--sun2:#C99400;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia,serif;overflow:hidden;-webkit-text-size-adjust:100%}
+body{font-size:16px;line-height:1.5}
+.sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+
+/* ── Sticky operational header ── */
+#topbar{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--bg);border-bottom:1px solid var(--border);padding:7px 12px 0;box-shadow:var(--shadow)}
+.tb-eyebrow{font-family:-apple-system,sans-serif;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:3px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tb-eyebrow-actions{display:flex;gap:6px;flex-shrink:0}
+.tb-main{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:8px}
+#day-title{font-size:16.5px;font-style:italic;line-height:1.15}
+.tb-nav{display:flex;gap:8px;flex-shrink:0}
+.tb-btn{background:var(--card);border:1px solid var(--border);color:var(--text);width:38px;height:38px;border-radius:10px;font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .tb-btn:disabled{opacity:.25;cursor:default}
-.icon-btn{background:none;border:none;color:var(--accent);font-family:sans-serif;font-size:11px;cursor:pointer;padding:2px 6px}
-#prog-track{height:8px;background:var(--border);border-radius:4px;margin-bottom:7px;position:relative}
+.icon-btn{background:var(--card);border:1px solid var(--border);color:var(--accent);font-family:-apple-system,sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;padding:6px 9px;border-radius:9px;min-height:32px;display:inline-flex;align-items:center;gap:4px}
+.icon-btn.sos{color:var(--red);border-color:color-mix(in srgb,var(--red) 45%,var(--border))}
+#prog-track{height:7px;background:var(--border);border-radius:4px;margin-bottom:6px;position:relative}
 #prog-fill{height:100%;border-radius:4px;transition:width .4s ease,background .4s ease}
-.prog-tick{position:absolute;top:-2px;width:2px;height:12px;background:var(--bg);opacity:.6}
-#pill-strip{display:flex;gap:5px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+.prog-tick{position:absolute;top:-2px;width:2px;height:11px;background:var(--bg);opacity:.6}
+#pill-strip{display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
 #pill-strip::-webkit-scrollbar{display:none}
-.dpill{flex-shrink:0;padding:3px 10px;border-radius:11px;font-family:sans-serif;font-size:11px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s}
-.dpill.on{color:#000;border-color:transparent;font-weight:700}
-#main{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding-top:118px;padding-bottom:72px}
-.card-slide{animation:slideIn .3s ease}
-@keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
-#map-wrap{height:230px;position:relative}
-#map{height:100%;width:100%}
-#map-overlay{position:absolute;top:8px;right:8px;z-index:500;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
-.map-pill{background:rgba(12,12,14,.85);border:1px solid var(--border);color:var(--accent);font-family:sans-serif;font-size:10.5px;padding:4px 9px;border-radius:6px;text-decoration:none;white-space:nowrap;cursor:pointer}
-.map-pill.est{color:var(--red);border-color:#E74C3C55}
-.map-pill.on{background:var(--blue);color:#fff;border-color:var(--blue)}
-#card{padding:13px 14px}
-.date-row{display:flex;align-items:center;gap:8px;font-family:sans-serif;font-size:11px;color:var(--muted);margin-bottom:12px;flex-wrap:wrap}
-#start-date,#start-time{background:var(--card);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:11px;font-family:sans-serif}
-#trip-date{color:var(--accent)}
-#eta-badge{color:var(--blue);margin-left:auto}
-.stats{display:flex;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
-.sc{flex:1;padding:10px 6px;text-align:center;border-right:1px solid var(--border)}
+.dpill{flex-shrink:0;padding:4px 11px;border-radius:11px;font-family:-apple-system,sans-serif;font-size:12px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;min-height:29px}
+.dpill.on{color:var(--accent-ink);border-color:transparent;font-weight:700}
+/* operational metric chips */
+#ops-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+#ops-strip::-webkit-scrollbar{display:none}
+.ops{flex-shrink:0;background:var(--card);border:1px solid var(--border);border-radius:9px;padding:4px 9px;min-width:58px;font-family:-apple-system,sans-serif}
+.ops .ov{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap}
+.ops .ol{font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-top:1px;white-space:nowrap}
+.ops.hl{border-color:color-mix(in srgb,var(--accent) 50%,var(--border))}
+.ops.hl .ov{color:var(--accent)}
+.ops.plan .ov::after{content:" ·plan";font-size:8px;color:var(--faint);font-weight:400}
+
+/* ── Scroll region ── */
+#main{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding-top:var(--head-h);padding-bottom:88px;-webkit-overflow-scrolling:touch}
+#card{padding:12px 14px;max-width:820px;margin:0 auto}
+.card-slide{animation:slideIn .28s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+section{margin-bottom:13px}
+.sec{font-family:-apple-system,sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.sec .hint{font-size:9.5px;color:var(--faint);text-transform:none;letter-spacing:0}
+
+/* control bar (master start date/time) */
+#ctl-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:-apple-system,sans-serif;font-size:12.5px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 12px}
+#start-date,#start-time{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 9px;border-radius:8px;font-size:14px;font-family:-apple-system,sans-serif;min-height:40px}
+#trip-date{color:var(--accent);font-weight:600}
+
+/* ── Card / callout system ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.callout{border-radius:12px;padding:11px 13px;font-family:-apple-system,sans-serif;font-size:13.5px;color:var(--text);line-height:1.5;background:var(--card);border:1px solid var(--border)}
+.callout .lbl{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;margin-bottom:5px}
+.c-green{border-left:4px solid var(--green)} .c-green .lbl{color:var(--green)}
+.c-red{border-left:4px solid var(--red);background:color-mix(in srgb,var(--red) 8%,var(--card))} .c-red .lbl{color:var(--red)}
+.c-blue{border-left:4px solid var(--blue)} .c-blue .lbl{color:var(--blue)}
+.c-amber{border-left:4px solid var(--amber)} .c-amber .lbl{color:var(--amber)}
+.c-neutral .lbl{color:var(--muted)}
+
+/* weather */
+#wx .wx-head{font-family:-apple-system,sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;gap:8px}
+#wx .wx-head .upd{color:var(--faint);letter-spacing:0}
+.wx-row{display:flex;gap:16px;flex-wrap:wrap;font-family:-apple-system,sans-serif}
+.wx-item{display:flex;align-items:center;gap:6px;font-size:15px;color:var(--text)}
+
+/* ── Next stop / decision card ── */
+#next-card .nx{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:14px;padding:13px 15px;box-shadow:var(--shadow)}
+.nx .nx-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.nx .nx-eyebrow{font-family:-apple-system,sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.nx .nx-name{font-size:23px;font-style:italic;line-height:1.1;margin:3px 0 2px;display:flex;align-items:center;gap:8px}
+.nx .nx-sub{font-family:-apple-system,sans-serif;font-size:14px;color:var(--muted);margin-bottom:10px}
+.nx .nx-sub b{color:var(--text)}
+.nx-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:-apple-system,sans-serif;font-size:13px}
+.nx-cell{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:7px 9px}
+.nx-cell .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin-bottom:2px}
+.nx-cell .v{font-size:14px;color:var(--text);font-weight:600}
+.nx-cell.full{grid-column:1/-1}
+.nx-done{text-align:center;padding:6px 0 2px;color:var(--green);font-family:-apple-system,sans-serif;font-size:13px;font-weight:600}
+
+/* ── Confidence / status badges (never colour-only: icon + text) ── */
+.badge{display:inline-flex;align-items:center;gap:4px;font-family:-apple-system,sans-serif;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;line-height:1.6}
+.badge .bi{font-size:11px}
+.bg-Confirmed{color:var(--green);border-color:color-mix(in srgb,var(--green) 45%,var(--border))}
+.bg-Reliable{color:var(--green);border-color:color-mix(in srgb,var(--green) 45%,var(--border))}
+.bg-Likely{color:var(--blue);border-color:color-mix(in srgb,var(--blue) 40%,var(--border))}
+.bg-Seasonal,.bg-Timesensitive{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 45%,var(--border))}
+.bg-Unverified{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 40%,var(--border))}
+.bg-None{color:var(--faint)}
+.bg-Notspecified{color:var(--faint)}
+
+/* ── Stats grid (day overview) ── */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.sc{padding:11px 6px;text-align:center;border-right:1px solid var(--border)}
 .sc:last-child{border-right:none}
-.sv{font-size:16px;font-weight:700;color:var(--text)}
-.sl{font-family:sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-top:2px}
-#profile-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px}
-.profile-head{font-family:sans-serif;font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
-#elev-svg{width:100%;height:56px;display:block}
-.sun{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:12px;gap:8px;font-family:sans-serif;font-size:12px}
-.sun-t{white-space:nowrap}
-.sun-bar{flex:1;height:4px;background:var(--border);border-radius:2px;position:relative}
-.sun-fill{position:absolute;top:0;height:100%;background:linear-gradient(90deg,#FF8C42,#FFD166,#FF8C42);border-radius:2px;transition:width .4s}
-#wx{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:12px;font-family:sans-serif}
-.wx-head{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px}
-.wx-row{display:flex;gap:12px;flex-wrap:wrap}
-.wx-item{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--text)}
-.sec{font-family:sans-serif;font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px;margin-top:4px;display:flex;justify-content:space-between;align-items:center}
-.stop{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
-.stop:last-child{border-bottom:none}
-.stop.crit{background:linear-gradient(90deg,#E74C3C11,transparent);margin:0 -14px;padding:9px 14px;border-radius:6px}
-.s-check{flex-shrink:0;padding-top:2px}
-.s-check input{width:17px;height:17px;accent-color:var(--accent)}
-.s-km{font-family:sans-serif;font-size:11px;font-weight:700;color:var(--accent);min-width:36px;padding-top:1px}
-.s-ico{font-size:15px;padding-top:1px}
-.s-body{flex:1}
-.s-name{font-family:sans-serif;font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
-.s-note{font-family:sans-serif;font-size:11px;color:var(--muted);line-height:1.45}
-.s-meta{font-family:sans-serif;font-size:10.5px;color:var(--accent);margin-top:4px}
-.s-why{font-family:sans-serif;font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:4px}
-.s-why b{color:var(--green)}
-.s-backup{font-family:sans-serif;font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:3px}
-.s-backup b{color:var(--red)}
-.callout{border-radius:9px;padding:10px 12px;margin-bottom:12px;font-family:sans-serif;font-size:12px;color:var(--muted);line-height:1.5}
-.callout b{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
-.c-green{background:var(--card);border:1px solid #27AE6033;border-left:3px solid var(--green)}
-.c-green b{color:var(--green)}
-.c-red{background:var(--card);border:1px solid #E74C3C33;border-left:3px solid var(--red)}
-.c-red b{color:var(--red)}
-.c-neutral{background:var(--card);border:1px solid var(--border)}
-.c-neutral b{color:var(--muted)}
-.c-blue{background:var(--card);border:1px solid #3498DB33;border-left:3px solid var(--blue)}
-.c-blue b{color:var(--blue)}
-#bot{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--bg) 38%);padding:18px 14px 14px;display:flex;gap:8px;z-index:900}
-.nb{flex:1;padding:12px;border-radius:11px;font-family:sans-serif;font-size:13px;font-weight:600;border:1px solid var(--border);cursor:pointer;background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;gap:5px;transition:background .15s,color .15s}
+.sv{font-size:18px;font-weight:700;color:var(--text)}
+.sl{font-family:-apple-system,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);margin-top:2px}
+
+/* ── ETA breakdown ── */
+.eta-row{display:flex;justify-content:space-between;align-items:baseline;font-family:-apple-system,sans-serif;font-size:13.5px;padding:5px 0;border-bottom:1px dashed var(--border)}
+.eta-row:last-child{border-bottom:none}
+.eta-row .el{color:var(--text)} .eta-row .el .tag{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-left:6px;border:1px solid var(--border);padding:1px 5px;border-radius:5px}
+.eta-row .ev{font-weight:700;color:var(--text)}
+.eta-row.total{border-top:2px solid var(--border);margin-top:3px;padding-top:8px;border-bottom:none}
+.eta-row.total .ev{color:var(--accent);font-size:15px}
+
+/* ── Prep / before-departure ── */
+.prep-item{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--border);font-family:-apple-system,sans-serif;font-size:14px;min-height:44px}
+.prep-item:last-child{border-bottom:none}
+.prep-item input[type=checkbox]{width:24px;height:24px;flex-shrink:0;accent-color:var(--accent)}
+.prep-item .pk{flex:1}
+.prep-item .pv{color:var(--muted);font-size:13px;text-align:right}
+.prep-static{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-family:-apple-system,sans-serif;font-size:13.5px}
+.prep-static:last-child{border-bottom:none}
+.prep-static .pk{color:var(--muted)} .prep-static .pv{color:var(--text);font-weight:600;text-align:right}
+
+/* ── Segment overview ── */
+.seg{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;font-family:-apple-system,sans-serif;padding:9px 0;border-bottom:1px solid var(--border)}
+.seg:last-child{border-bottom:none}
+.seg .sg-route{font-size:14px;font-weight:600;color:var(--text)}
+.seg .sg-nums{font-size:12.5px;color:var(--accent);white-space:nowrap;text-align:right}
+.seg .sg-purpose{grid-column:1/-1;font-size:12px;color:var(--muted);line-height:1.4}
+.seg .sg-tags{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+
+/* ── Stop cards (scannable) ── */
+.stop{border:1px solid var(--border);border-radius:12px;padding:11px 12px;margin-bottom:9px;background:var(--card);display:flex;gap:11px;align-items:flex-start}
+.stop.crit{border-color:color-mix(in srgb,var(--red) 45%,var(--border));background:color-mix(in srgb,var(--red) 7%,var(--card))}
+.stop.done{opacity:.62}
+.s-check{flex-shrink:0}
+.s-check label{display:flex;align-items:center;justify-content:center;width:44px;height:44px;cursor:pointer;border-radius:10px}
+.s-check input{width:26px;height:26px;accent-color:var(--accent);cursor:pointer}
+.s-body{flex:1;min-width:0}
+.s-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.s-km{font-family:-apple-system,sans-serif;font-size:12px;font-weight:700;color:var(--accent)}
+.s-name{font-family:-apple-system,sans-serif;font-size:16px;font-weight:700;color:var(--text)}
+.stop.done .s-name{text-decoration:line-through;text-decoration-color:var(--faint)}
+.s-type{font-family:-apple-system,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);border:1px solid var(--border);border-radius:5px;padding:1px 6px}
+.s-purpose{font-family:-apple-system,sans-serif;font-size:13.5px;color:var(--text);margin:5px 0}
+.s-facts{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.s-fact{font-family:-apple-system,sans-serif;font-size:11.5px;color:var(--muted);background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:3px 8px}
+.s-fact b{color:var(--text);font-weight:600}
+.s-warn{font-family:-apple-system,sans-serif;font-size:12px;color:var(--amber);margin:5px 0;display:flex;gap:5px;align-items:flex-start}
+.s-fallback{font-family:-apple-system,sans-serif;font-size:12px;color:var(--muted);margin-top:4px}
+.s-fallback b{color:var(--red);font-weight:600}
+details.s-details{margin-top:7px}
+details.s-details>summary{font-family:-apple-system,sans-serif;font-size:12px;color:var(--blue);cursor:pointer;list-style:none;padding:4px 0;min-height:30px;display:flex;align-items:center;gap:5px}
+details.s-details>summary::-webkit-details-marker{display:none}
+details.s-details>summary::before{content:"▸";transition:transform .15s}
+details.s-details[open]>summary::before{transform:rotate(90deg)}
+.s-detail-body{font-family:-apple-system,sans-serif;font-size:12.5px;color:var(--muted);line-height:1.5;padding:4px 0 2px}
+.s-detail-body p{margin-bottom:6px}
+.s-detail-body b{color:var(--text)}
+
+/* ── Collapsible sections (native details) ── */
+details.collapse{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+details.collapse>summary{font-family:-apple-system,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);cursor:pointer;list-style:none;padding:12px 14px;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+details.collapse>summary::-webkit-details-marker{display:none}
+details.collapse>summary .chev{color:var(--faint);transition:transform .2s}
+details.collapse[open]>summary .chev{transform:rotate(90deg)}
+details.collapse>summary .sum-right{font-size:11px;color:var(--faint);text-transform:none;letter-spacing:0}
+.collapse-body{padding:0 14px 14px}
+
+/* map + elevation */
+#map-wrap{height:250px;position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+#map{height:100%;width:100%;background:var(--card2)}
+#map-overlay{position:absolute;top:8px;right:8px;z-index:500;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.map-pill{background:color-mix(in srgb,var(--bg) 85%,transparent);border:1px solid var(--border);color:var(--accent);font-family:-apple-system,sans-serif;font-size:12px;padding:7px 11px;border-radius:8px;text-decoration:none;white-space:nowrap;cursor:pointer;min-height:34px;display:inline-flex;align-items:center;gap:4px}
+.map-pill.est{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,var(--border))}
+.map-pill.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+#profile-wrap{margin-top:12px}
+.profile-head{font-family:-apple-system,sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
+.profile-head #profile-max{color:var(--accent)}
+.elev-shell{position:relative;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:6px 8px 4px}
+#elev-svg{width:100%;height:120px;display:block}
+.elev-yax{position:absolute;left:6px;top:6px;bottom:20px;display:flex;flex-direction:column;justify-content:space-between;font-family:-apple-system,sans-serif;font-size:9px;color:var(--faint);pointer-events:none}
+.elev-climbs{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.climb-chip{font-family:-apple-system,sans-serif;font-size:11px;color:var(--amber);background:var(--card);border:1px solid color-mix(in srgb,var(--amber) 35%,var(--border));border-radius:7px;padding:2px 7px}
+#profile-note{font-family:-apple-system,sans-serif;font-size:10.5px;color:var(--faint);margin-top:5px}
+#profile-stats{display:flex;gap:14px;font-family:-apple-system,sans-serif;font-size:11.5px;color:var(--muted);margin-top:6px}
+#profile-stats b{color:var(--text)}
+
+/* daylight/sun bar */
+.sun{display:flex;align-items:center;padding:4px 0;gap:9px;font-family:-apple-system,sans-serif;font-size:13px}
+.sun-t{white-space:nowrap;color:var(--text)}
+.sun-bar{flex:1;height:5px;background:var(--border);border-radius:3px;position:relative}
+.sun-fill{position:absolute;top:0;height:100%;background:linear-gradient(90deg,var(--sun1),var(--sun2),var(--sun1));border-radius:3px;transition:width .4s}
+
+/* ── Bottom nav ── */
+#bot{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--bg) 42%);padding:20px 14px 14px;display:flex;gap:9px;z-index:900}
+#bot-inner{display:flex;gap:9px;max-width:820px;margin:0 auto;width:100%}
+.nb{flex:1;padding:14px;border-radius:12px;font-family:-apple-system,sans-serif;font-size:15px;font-weight:600;border:1px solid var(--border);cursor:pointer;background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;gap:6px;min-height:52px}
 .nb:disabled{opacity:.25;cursor:default}
-.nb.pri{background:var(--accent);color:#000;border-color:var(--accent)}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;display:none;align-items:flex-end}
+.nb.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+/* ── Modal ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:2000;display:none;align-items:flex-end}
 .modal-bg.open{display:flex}
-.modal{background:var(--card);border-top:1px solid var(--border);border-radius:16px 16px 0 0;padding:18px;width:100%;max-height:70vh;overflow-y:auto;font-family:sans-serif}
-.modal h3{font-family:Georgia,serif;font-style:italic;font-size:18px;margin-bottom:12px}
-.modal-close{float:right;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer}
-.emg-row{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.modal{background:var(--card);border-top:1px solid var(--border);border-radius:18px 18px 0 0;padding:18px 18px 26px;width:100%;max-width:640px;margin:0 auto;max-height:82vh;overflow-y:auto;font-family:-apple-system,sans-serif}
+.modal h3{font-family:Georgia,serif;font-style:italic;font-size:21px;margin-bottom:12px}
+.modal-close{float:right;background:var(--card2);border:1px solid var(--border);color:var(--muted);font-size:18px;cursor:pointer;width:38px;height:38px;border-radius:9px}
+.emg-row{padding:11px 0;border-bottom:1px solid var(--border);font-size:15px;color:var(--text)}
+.emg-row:last-child{border-bottom:none}
 .emg-row b{color:var(--accent);display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
-.leaflet-popup-content-wrapper{background:#1a1a1c;color:#F0EAD6;border:1px solid #2c2c2e;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.5);padding:0}
-.leaflet-popup-tip{background:#1a1a1c}
-.leaflet-popup-content{margin:9px 12px;font-family:sans-serif;font-size:12px;line-height:1.5}
-.leaflet-popup-close-button{color:#555!important;right:7px!important;top:5px!important}
+.emg-row a{color:var(--blue)}
+.emg-call{color:var(--red);font-weight:700;font-size:18px}
+
+/* ── Leaflet popups, theme-aware ── */
+.leaflet-popup-content-wrapper{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:0}
+.leaflet-popup-tip{background:var(--card)}
+.leaflet-popup-content{margin:9px 12px;font-family:-apple-system,sans-serif;font-size:13px;line-height:1.5}
+.leaflet-popup-close-button{color:var(--faint)!important;right:7px!important;top:5px!important}
 .leaflet-control-attribution{font-size:9px!important}
+:root[data-theme="light"] .leaflet-tile{filter:none}
+
+@media(min-width:760px){
+  .nx-grid{grid-template-columns:repeat(4,1fr)}
+  #map-wrap{height:340px}
+  #elev-svg{height:150px}
+  .seg{grid-template-columns:minmax(200px,1.4fr) auto 2fr;gap:4px 18px}
+  .seg .sg-purpose{grid-column:auto} .seg .sg-tags{grid-column:auto;justify-content:flex-end}
+}
 </style>
 </head>
 <body>
 <div id="topbar">
-<div class="tb-eyebrow"><span>St. Olavsleden · Day Cards</span><button class="icon-btn" onclick="openEmergency()">🆘 Emergency</button></div>
+<div class="tb-eyebrow">
+<span>St. Olavsleden · Day Cards</span>
+<div class="tb-eyebrow-actions">
+<button class="icon-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle day/night mode">☀️ Day</button>
+<button class="icon-btn sos" onclick="openEmergency()" aria-label="Emergency information">🆘 SOS</button>
+</div>
+</div>
 <div class="tb-main">
-<div id="day-title">Day 1: Selånger → Borgsjö</div>
+<div id="day-title">Day 1: Selånger → Fränsta</div>
 <div class="tb-nav">
-<button class="tb-btn" id="btn-p" onclick="go(-1)">‹</button>
-<button class="tb-btn" id="btn-n" onclick="go(1)">›</button>
+<button class="tb-btn" id="btn-p" onclick="go(-1)" aria-label="Previous day">‹</button>
+<button class="tb-btn" id="btn-n" onclick="go(1)" aria-label="Next day">›</button>
 </div>
 </div>
 <div id="prog-track"><div id="prog-fill"></div></div>
 <div id="pill-strip"></div>
+<div id="ops-strip"></div>
 </div>
 
 <div id="main">
+<div id="card">
+
+<!-- 1 · master start controls -->
+<section id="ctl-bar">
+<span>Start</span>
+<input type="date" id="start-date" onchange="onDateChange()" aria-label="Start date">
+<input type="time" id="start-time" value="06:00" onchange="onDateChange()" aria-label="Start time">
+<span id="trip-date"></span>
+</section>
+
+<!-- 2 · critical alert + weather -->
+<section id="warn-c"></section>
+<section id="wx" class="card">
+<div class="wx-head"><span>Weather · <span id="wx-loc">—</span></span><span class="upd" id="wx-upd"></span></div>
+<div id="wx-body" class="wx-row"><span style="color:var(--muted);font-style:italic">Set start date to see forecast</span></div>
+</section>
+
+<!-- 3 · next stop / next decision -->
+<section id="next-card"></section>
+
+<!-- 4 · before departure (planning + prep) -->
+<details class="collapse" id="prep-panel">
+<summary><span>🎒 Before departure &amp; day plan</span><span class="chev">▸</span></summary>
+<div class="collapse-body" id="prep-body"></div>
+</details>
+
+<!-- 5 · map + elevation (collapsible) -->
+<details class="collapse" id="mapelev" open>
+<summary><span>🗺 Map &amp; elevation</span><span class="sum-right" id="mapelev-sum"></span></summary>
+<div class="collapse-body">
 <div id="map-wrap">
 <div id="map"></div>
 <div id="map-overlay">
 <a href="index.html" class="map-pill">🗺 Overview</a>
 <span class="map-pill" id="gps-toggle" onclick="toggleGPS()">📍 Track me</span>
-<span class="map-pill" id="gpx-export" onclick="exportGPX()">⬇ Export GPX</span>
+<span class="map-pill" id="gpx-export" onclick="exportGPX()">⬇ GPX</span>
 <span class="map-pill" id="map-km-label" style="color:var(--text)">—</span>
 </div>
 </div>
-
-<div id="card">
-<div class="date-row">
-Start:&nbsp;<input type="date" id="start-date" onchange="onDateChange()">
-<input type="time" id="start-time" value="06:00" onchange="onDateChange()">
-<span id="trip-date"></span>
-<span id="eta-badge"></span>
-</div>
-
-<div class="stats">
-<div class="sc"><div class="sv" id="s-km">—</div><div class="sl">km</div></div>
-<div class="sc"><div class="sv" id="s-eg">—</div><div class="sl">Climb</div></div>
-<div class="sc"><div class="sv" id="s-t">—</div><div class="sl">Est. time</div></div>
-<div class="sc"><div class="sv" id="s-d">—</div><div class="sl">Day</div></div>
-<div class="sc"><div class="sv" id="s-c">—</div><div class="sl">Total</div></div>
-</div>
-
 <div id="profile-wrap">
 <div class="profile-head"><span>Elevation profile</span><span id="profile-max"></span></div>
-<svg id="elev-svg" viewBox="0 0 300 56" preserveAspectRatio="none"></svg>
-<div id="profile-note" style="font-family:sans-serif;font-size:9.5px;color:var(--muted);margin-top:4px"></div>
+<div class="elev-shell">
+<div class="elev-yax" id="elev-yax"></div>
+<svg id="elev-svg" viewBox="0 0 300 120" preserveAspectRatio="none"></svg>
 </div>
-
+<div id="profile-stats"></div>
+<div class="elev-climbs" id="elev-climbs"></div>
+<div id="profile-note"></div>
+</div>
 <div class="sun">
 <div class="sun-t">🌅 <span id="sr">—</span></div>
 <div class="sun-bar"><div class="sun-fill" id="sf"></div></div>
 <div class="sun-t"><span id="ss">—</span> 🌇</div>
 </div>
-
-<div id="wx">
-<div class="wx-head">Weather · <span id="wx-loc">—</span></div>
-<div id="wx-body" class="wx-row"><span style="color:var(--muted);font-style:italic;font-size:12px">Set start date to see forecast</span></div>
 </div>
+</details>
 
-<div class="sec"><span>Key stops</span><span style="font-size:9px">tap ✓ to check off</span></div>
+<!-- 6 · segment overview -->
+<details class="collapse" id="seg-panel">
+<summary><span>↔ Segments</span><span class="sum-right" id="seg-sum"></span></summary>
+<div class="collapse-body" id="seg-body"></div>
+</details>
+
+<!-- 7 · full stop list -->
+<section id="stops-sec">
+<div class="sec"><span>Key stops</span><span class="hint">tap ✓ to check off · advances “next”</span></div>
 <div id="stops"></div>
+</section>
 
-<div style="margin-top:12px" id="bivvy-c"></div>
-<div id="warn-c"></div>
-<div id="note-c"></div>
+<!-- 8 · camp + fallback -->
+<section id="bivvy-c"></section>
+
+<!-- 9 · notes / provenance -->
+<section id="note-c"></section>
+
 </div>
 </div>
 
-<div id="bot">
+<div id="bot"><div id="bot-inner">
 <button class="nb" id="nb-p" onclick="go(-1)">← Previous</button>
 <button class="nb pri" id="nb-n" onclick="go(1)">Next →</button>
-</div>
+</div></div>
 
 <div class="modal-bg" id="emg-modal" onclick="if(event.target===this)closeEmergency()">
 <div class="modal">
@@ -181,6 +359,7 @@ Start:&nbsp;<input type="date" id="start-date" onchange="onDateChange()">
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="lib.js"></script>
 <script>
 // ═══════════════════════════════════
 // DATA
@@ -237,16 +416,42 @@ D.forEach(d=>CUM.push(CUM[CUM.length-1]+d.km));
 // ═══════════════════════════════════
 // STATE
 // ═══════════════════════════════════
-let cur=0, map, routeLine, mkrs=[], startDate=null, gpsWatchId=null, gpsMarker=null;
+let cur=0, map, routeLine, mkrs=[], startDate=null, gpsWatchId=null, gpsMarker=null, lastGPS=null;
 const wxCache={};
 const CHECK_KEY='olavsleden_checks_v1';
-let checks = {};
+const PREP_KEY='olavsleden_prep_v1';
+const MANUAL_KEY='olavsleden_manualkm_v1';
+const THEME_KEY='olavsleden_theme_v1';
+let checks={}, prep={}, manualKm={};
 try{ checks = JSON.parse(localStorage.getItem(CHECK_KEY)||'{}'); }catch(e){ checks={}; }
+try{ prep   = JSON.parse(localStorage.getItem(PREP_KEY)||'{}'); }catch(e){ prep={}; }
+try{ manualKm = JSON.parse(localStorage.getItem(MANUAL_KEY)||'{}'); }catch(e){ manualKm={}; }
+// time-dependent values computed by onDateChange, read by the renderers
+const T={ startDT:null, dayDate:null, sunriseDT:null, sunsetDT:null, eta:null, wxUpdated:null };
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clk=OL.fmtClock, dur=OL.fmtDur;
+
+// ═══════════════════════════════════
+// THEME (dark default / high-contrast daylight)
+// ═══════════════════════════════════
+function applyTheme(t){
+document.documentElement.setAttribute('data-theme', t==='light'?'light':'dark');
+document.querySelector('meta[name=theme-color]').setAttribute('content', t==='light'?'#FAF8F1':'#0C0C0E');
+const b=document.getElementById('theme-btn'); if(b) b.textContent = t==='light'?'🌙 Night':'☀️ Day';
+}
+function toggleTheme(){
+const next = document.documentElement.getAttribute('data-theme')==='light'?'dark':'light';
+try{ localStorage.setItem(THEME_KEY,next); }catch(e){}
+applyTheme(next);
+setTimeout(setHeaderHeight,50);
+}
 
 // ═══════════════════════════════════
 // INIT
 // ═══════════════════════════════════
 function init(){
+try{ applyTheme(localStorage.getItem(THEME_KEY)||'dark'); }catch(e){ applyTheme('dark'); }
+
 const strip=document.getElementById('pill-strip');
 D.forEach((d,i)=>{
 const b=document.createElement('button');
@@ -287,10 +492,31 @@ L.polyline(all,{color:'#2a2a2e',weight:2.5,opacity:.9}).addTo(map);
 
 go2(0);
 
+window.addEventListener('resize', setHeaderHeight);
+window.addEventListener('orientationchange', ()=>setTimeout(setHeaderHeight,200));
+
+// Leaflet needs a size recalculation when revealed from a collapsed <details>.
+document.getElementById('mapelev').addEventListener('toggle',function(){
+if(this.open){ setTimeout(()=>{ map.invalidateSize(); if(routeLine) map.fitBounds(routeLine.getBounds(),{padding:[24,24]}); },60); }
+});
+window.addEventListener('online',()=>{ const off=document.getElementById('offline-status'); if(off) updateOffline(); });
+window.addEventListener('offline',()=>{ const off=document.getElementById('offline-status'); if(off) updateOffline(); });
+
 if('serviceWorker' in navigator){
 navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 }
+
+// keep #main padding in sync with the (variable-height) sticky header
+function setHeaderHeight(){
+const h=document.getElementById('topbar').offsetHeight;
+document.documentElement.style.setProperty('--head-h',(h+8)+'px');
+}
+
+// day's calendar date (start date + day offset)
+function dayDateFor(i){ const d=new Date(startDate); d.setDate(d.getDate()+i); return d; }
+function sameYMD(a,b){ return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function manualKmFor(d){ const v=manualKm['d'+d.d]; return (typeof v==='number')?v:undefined; }
 
 // ═══════════════════════════════════
 // NAVIGATE
@@ -318,67 +544,287 @@ p.style.background=j===i?D[j].c:'';
 });
 document.getElementById(`p${i}`)?.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
 
-document.getElementById('s-km').textContent=d.km.toFixed(1);
-document.getElementById('s-eg').textContent=`${d.eg}m`;
-document.getElementById('s-d').textContent=`D${d.d}/10`;
-document.getElementById('s-c').textContent=`${Math.round(CUM[i+1])}km`;
 document.getElementById('map-km-label').innerHTML=(d.est?'⚠️ estimated · ':'')+`${d.km.toFixed(1)}km day`;
 document.getElementById('map-km-label').classList.toggle('est',!!d.est);
+document.getElementById('mapelev-sum').textContent=`${d.km.toFixed(1)} km · ${d.eg} m ↑`;
 
 drawProfile(d);
-onDateChange();
 updateMap(d);
 renderStops(d);
+renderSegments(d);
 
 document.getElementById('bivvy-c').innerHTML=
-`<div class="callout c-green"><b>🏕 Bivvy / Camp</b>${d.bivvy}</div>`;
-document.getElementById('warn-c').innerHTML=d.warn
-?`<div class="callout c-red"><b>⚠️ Warning</b>${d.warn}</div>`:'';
+`<div class="callout c-green"><div class="lbl">🏕 Camp / bivvy${d.stops.some(s=>s.backup)?' · fallback below':''}</div>${esc(d.bivvy)}</div>`;
 document.getElementById('note-c').innerHTML=d.note
-?`<div class="callout c-neutral"><b>Day notes</b>${d.note}</div>`:'';
+?`<details class="collapse"><summary><span>📔 Day notes &amp; provenance</span><span class="chev">▸</span></summary><div class="collapse-body" style="font-family:-apple-system,sans-serif;font-size:13.5px;color:var(--muted);line-height:1.55">${esc(d.note)}</div></details>`:'';
+
+onDateChange();          // computes time values + renders timing-dependent UI
+
+// collapse map & prep once the day has been started (progress recorded)
+const started=OL.dayProgress(d,checks,manualKmFor(d)).started;
+document.getElementById('mapelev').open=!started;
+document.getElementById('prep-panel').open=!started;
+document.getElementById('seg-panel').open=false;
 
 document.getElementById('card').classList.remove('card-slide');
 void document.getElementById('card').offsetWidth;
 document.getElementById('card').classList.add('card-slide');
-
 document.getElementById('main').scrollTo({top:0,behavior:'smooth'});
-
-if(gpsWatchId!==null){ /* keep tracking across day changes */ }
+setHeaderHeight();
 }
 
 // ═══════════════════════════════════
-// STOPS + CHECKLIST
+// STOPS (scannable structured cards)
 // ═══════════════════════════════════
-function stopKey(d,s){ return `d${d.d}_${s.n}`; }
+function badge(kind,val){
+const info=OL.CONFIDENCE[val];
+const icon=info?info.icon:(val==='Reliable'?'✓':val==='None'?'–':'•');
+const cls='bg-'+String(val).replace(/[^A-Za-z]/g,'');
+return `<span class="badge ${cls}"><span class="bi">${icon}</span>${esc(val)}</span>`;
+}
+function typeLabel(t){return({food:'Food',water:'Water',critical:'Critical water',bivvy:'Camp',stamp:'Waypoint',city:'Town',swim:'Swim',finish:'Finish'})[t]||t;}
 function renderStops(d){
-document.getElementById('stops').innerHTML=d.stops.map(s=>{
-const key=stopKey(d,s);
+document.getElementById('stops').innerHTML=d.stops.map((s,idx)=>{
+const key=OL.stopKey(d.d,s.n);
+const n=OL.normalizeStop(s);
 const isCrit=s.t==='critical';
-const checked=checks[key]?'checked':'';
-const meta=[];
-if(s.hours) meta.push(`🕐 ${s.hours}`);
-if(s.dwell) meta.push(`⏱ ~${s.dwell}`);
-const metaLine = meta.length ? `<div class="s-meta">${meta.join(' &nbsp;·&nbsp; ')}</div>` : '';
-const whyLine = s.why ? `<div class="s-why"><b>Why here:</b> ${s.why}</div>` : '';
-const backupLine = s.backup ? `<div class="s-backup"><b>If unavailable:</b> ${s.backup}</div>` : '';
+const done=!!checks[key];
+const gain=Math.round(OL.gainAtKm(d.profile,s.km)-(idx>0?OL.gainAtKm(d.profile,d.stops[idx-1].km):0));
+const prevKm=idx>0?d.stops[idx-1].km:0;
+const segDist=+(s.km-prevKm).toFixed(1);
+const segTime=dur(OL.movingHours(segDist,gain));
+const facts=[];
+facts.push(`<span class="s-fact"><b>Segment</b> ${segDist} km · ${segTime}</span>`);
+if(n.water!=='Not specified'&&n.water!=='None') facts.push(`<span class="s-fact">Water: ${badge('w',n.water)}</span>`);
+if(n.food!=='None'&&n.food!=='Not specified') facts.push(`<span class="s-fact">Food: ${badge('f',n.food)}</span>`);
+if(n.dwell) facts.push(`<span class="s-fact"><b>Budget</b> ${esc(n.dwell)}</span>`);
+facts.push(`<span class="s-fact">Confidence: ${badge('c',n.confidence)}</span>`);
+const warn = (n.timeSensitive&&n.hours) ? `<div class="s-warn"><span>⏱</span><span>${esc(n.hours)}</span></div>`
+           : (n.hours ? `<div class="s-warn" style="color:var(--muted)"><span>🕐</span><span>${esc(n.hours)}</span></div>` : '');
+const fallback = n.backup ? `<div class="s-fallback"><b>Fallback:</b> ${esc(n.backup)}</div>` : '';
+const details = (n.why||n.note) ? `<details class="s-details"><summary>Details — why here?</summary><div class="s-detail-body">${n.why?`<p><b>Why here:</b> ${esc(n.why)}</p>`:''}${n.note?`<p>${esc(n.note)}</p>`:''}</div></details>` : '';
 return `
-<div class="stop${isCrit?' crit':''}">
-<div class="s-check"><input type="checkbox" ${checked} onchange="toggleCheck('${key}',this.checked)"></div>
-<div class="s-km">${s.km}km</div>
-<div class="s-ico">${s.i}</div>
+<div class="stop${isCrit?' crit':''}${done?' done':''}" id="stop-${idx}">
+<div class="s-check"><label for="ck-${idx}"><input id="ck-${idx}" type="checkbox" ${done?'checked':''} onchange="toggleCheck('${key}',this.checked,${idx})" aria-label="Mark ${esc(s.n)} done"></label></div>
 <div class="s-body">
-<div class="s-name">${s.n}</div>
-<div class="s-note">${s.note}</div>
-${metaLine}
-${whyLine}
-${backupLine}
+<div class="s-head"><span class="s-km">${s.km} km</span><span class="s-name">${s.i} ${esc(s.n)}</span><span class="s-type">${typeLabel(s.t)}</span></div>
+<div class="s-purpose">${esc(n.why?OL.firstSentence(n.why):n.note)}</div>
+<div class="s-facts">${facts.join('')}</div>
+${warn}
+${fallback}
+${details}
 </div>
 </div>`;
 }).join('');
 }
-function toggleCheck(key,val){
+function toggleCheck(key,val,idx){
 checks[key]=val;
 try{ localStorage.setItem(CHECK_KEY, JSON.stringify(checks)); }catch(e){}
+const el=document.getElementById('stop-'+idx); if(el) el.classList.toggle('done',val);
+// checking a stop advances the "next" card and updates the header metrics
+renderNextCard(D[cur]);
+renderOps(D[cur]);
+renderPrep(D[cur]);
+}
+
+// ═══════════════════════════════════
+// DERIVED DAY CONTEXT (position / timing / progress)
+// ═══════════════════════════════════
+function shortDur(h){ if(h==null||isNaN(h))return '—'; const H=Math.floor(h),M=Math.round((h-H)*60); return H?(M?`${H}h${M}`:`${H}h`):`${M}m`; }
+// clock time, with a +Nd suffix when it lands on a later calendar day than the day's start
+function finishClock(date){ if(!date)return '—'; let s=clk(date); if(T.dayDate&&!sameYMD(date,T.dayDate)){ const dd=Math.round((new Date(date.getFullYear(),date.getMonth(),date.getDate())-new Date(T.dayDate.getFullYear(),T.dayDate.getMonth(),T.dayDate.getDate()))/864e5); if(dd>0)s+=`+${dd}d`; } return s; }
+function dayContext(d){
+const prog=OL.dayProgress(d,checks,manualKmFor(d));
+const trip=OL.tripProgress(D,CUM,cur,prog);
+const next=OL.deriveNextStop(d,checks);
+const now=new Date();
+const isToday=T.dayDate&&sameYMD(T.dayDate,now);
+let distToNext=null,timeToNextH=null,arriveNext=null;
+if(next&&!next.allDone){
+distToNext=Math.max(0,+(next.stop.km-prog.completedKm).toFixed(1));
+timeToNextH=Math.max(0,OL.timeToKm(d,next.stop.km)-OL.timeToKm(d,prog.completedKm));
+const base=(isToday&&prog.started)?now:(T.startDT||now);
+arriveNext=OL.addH(base,timeToNextH);
+}
+let projFinish=null;
+if(prog.started&&isToday){
+const remMove=OL.movingHours(prog.remainingKm,prog.remainingGain);
+const remStops=d.stops.filter(s=>s.t!=='finish'&&s.t!=='bivvy'&&s.km>prog.completedKm).length;
+const remH=remMove+remStops*OL.STOP_BUFFER_MIN/60+remMove*OL.CONTINGENCY;
+projFinish=OL.addH(now,remH);
+}else if(T.eta){ projFinish=T.eta.finishDate; }
+let lightLeftH=null;
+if(T.sunriseDT&&T.sunsetDT){
+lightLeftH=(isToday&&now>T.sunriseDT&&now<T.sunsetDT)?(T.sunsetDT-now)/3600e3:(T.sunsetDT-T.sunriseDT)/3600e3;
+}
+const variance=OL.scheduleVariance(d,{startDate:T.startDT,now:isToday?now:null,completedKm:prog.completedKm});
+return {prog,trip,next,now,isToday,distToNext,timeToNextH,arriveNext,projFinish,lightLeftH,variance};
+}
+
+// ═══════════════════════════════════
+// STICKY OPERATIONAL METRICS
+// ═══════════════════════════════════
+function renderOps(d){
+const c=dayContext(d);
+const started=c.prog.started;
+const pc=started?'':'plan';
+const chip=(v,l,extra)=>`<div class="ops ${extra||''}"><div class="ov">${v}</div><div class="ol">${l}</div></div>`;
+const out=[];
+out.push(chip(Math.round(c.trip.completedKm)+' km','Done',pc));
+out.push(chip(Math.round(c.trip.remainingKm)+' km','Trip left',pc));
+if(c.next&&!c.next.allDone){
+out.push(chip(esc(c.next.stop.n).split(' ')[0],'Next stop','hl '+pc));
+out.push(chip((c.distToNext!=null?c.distToNext:'—')+' km','To next',pc));
+out.push(chip(shortDur(c.timeToNextH),'Time',pc));
+}else{
+out.push(chip('✓','All stops','hl'));
+}
+out.push(chip(c.projFinish?finishClock(c.projFinish):'—','Finish','hl '+pc));
+out.push(chip(c.lightLeftH!=null?c.lightLeftH.toFixed(1)+' h':'—','Daylight',pc));
+document.getElementById('ops-strip').innerHTML=out.join('');
+setHeaderHeight();
+}
+
+// ═══════════════════════════════════
+// NEXT STOP / NEXT DECISION
+// ═══════════════════════════════════
+function renderNextCard(d){
+const el=document.getElementById('next-card');
+const c=dayContext(d);
+if(!c.next){ el.innerHTML=''; return; }
+const n=c.next.normalized;
+if(c.next.allDone && n.type==='finish'){
+el.innerHTML=`<div class="nx"><div class="nx-eyebrow">Final push</div><div class="nx-name">${n.icon} ${esc(n.name)}</div><div class="nx-done">All stops checked — finish at ${esc(n.name)} 🎉</div></div>`;
+return;
+}
+const gate=OL.deriveGate(d,c.next.stop,{startDate:T.startDT,sunset:T.sunsetDT});
+const cells=[];
+cells.push(`<div class="nx-cell"><div class="k">Water</div><div class="v">${badge('w',n.water==='Not specified'?'Not specified':n.water)}</div></div>`);
+cells.push(`<div class="nx-cell"><div class="k">Food</div><div class="v">${badge('f',n.food)}</div></div>`);
+const arr = gate&&gate.targetArrival ? gate.targetArrival : (c.arriveNext?clk(c.arriveNext):null);
+cells.push(`<div class="nx-cell"><div class="k">Target arrival${gate&&gate.source==='derived'?' · est':''}</div><div class="v">${arr||'set start time'}</div></div>`);
+// A derived leave-by only makes sense when it is later than the arrival (i.e.
+// the day actually fits inside daylight). Zero-padded HH:MM compares lexically.
+const feasibleGate = gate&&gate.latestDeparture&&(gate.source==='configured'||!arr||gate.latestDeparture>arr);
+if(feasibleGate){
+cells.push(`<div class="nx-cell"><div class="k">Leave no later${gate.source==='derived'?' · est':''}</div><div class="v">${gate.latestDeparture}</div></div>`);
+}else{
+cells.push(`<div class="nx-cell"><div class="k">Confidence</div><div class="v">${badge('c',n.confidence)}</div></div>`);
+}
+if(gate&&gate.latestDeparture&&!feasibleGate) cells.push(`<div class="nx-cell full"><div class="k">⚠ Daylight</div><div class="v" style="font-weight:400;font-size:12.5px">Full day exceeds daylight — plan an early/pre-dawn start, night walking, or split the day.</div></div>`);
+if(n.timeSensitive&&n.hours) cells.push(`<div class="nx-cell full"><div class="k">⏱ Opening / cutoff</div><div class="v" style="font-weight:400;font-size:12.5px">${esc(n.hours)}</div></div>`);
+if(n.backup) cells.push(`<div class="nx-cell full"><div class="k">Fallback</div><div class="v" style="font-weight:400;font-size:12.5px">${esc(n.backup)}</div></div>`);
+el.innerHTML=`<div class="nx">
+<div class="nx-top"><div class="nx-eyebrow">▶ Next ${c.next.allDone?'/ camp':'stop'}</div><div class="s-type">${typeLabel(n.type)}</div></div>
+<div class="nx-name">${n.icon} ${esc(n.name)}</div>
+<div class="nx-sub"><b>${c.distToNext!=null?c.distToNext:n.km} km</b> away · approx <b>${dur(c.timeToNextH!=null?c.timeToNextH:OL.timeToKm(d,n.km))}</b></div>
+<div class="nx-grid">${cells.join('')}</div>
+</div>`;
+}
+
+// ═══════════════════════════════════
+// SEGMENT OVERVIEW
+// ═══════════════════════════════════
+function renderSegments(d){
+const segs=OL.computeSegments(d);
+document.getElementById('seg-sum').textContent=`${segs.length} legs`;
+document.getElementById('seg-body').innerHTML=segs.map(s=>{
+const tags=[];
+if(s.water!=='Not specified'&&s.water!=='None') tags.push(`<span class="badge bg-${s.water.replace(/[^A-Za-z]/g,'')}"><span class="bi">${s.water==='Reliable'||s.water==='Confirmed'?'✓':'≈'}</span>${s.water} water</span>`);
+if(s.food!=='None'&&s.food!=='Not specified') tags.push(`<span class="badge bg-${s.food.replace(/[^A-Za-z]/g,'')}"><span class="bi">${OL.CONFIDENCE[s.food]?OL.CONFIDENCE[s.food].icon:'≈'}</span>${s.food} food</span>`);
+return `<div class="seg">
+<div class="sg-route">${esc(s.from)} → ${esc(s.to)}</div>
+<div class="sg-nums">${s.dist} km · ${dur(s.movingH)} · ${s.gain} m↑</div>
+<div class="sg-purpose">${esc(s.purpose)}</div>
+${tags.length?`<div class="sg-tags">${tags.join('')}</div>`:''}
+</div>`;
+}).join('');
+}
+
+// ═══════════════════════════════════
+// BEFORE-DEPARTURE PANEL (planning + prep + offline)
+// ═══════════════════════════════════
+function togglePrep(key,val){ prep[key]=val; try{ localStorage.setItem(PREP_KEY,JSON.stringify(prep)); }catch(e){} }
+function setManualKm(val){
+const d=D[cur]; const num=parseFloat(val);
+if(val===''||isNaN(num)){ delete manualKm['d'+d.d]; } else { manualKm['d'+d.d]=Math.max(0,Math.min(num,d.km)); }
+try{ localStorage.setItem(MANUAL_KEY,JSON.stringify(manualKm)); }catch(e){}
+renderOps(d); renderNextCard(d); renderPrep(d); drawProfile(d);
+}
+function renderPrep(d){
+const c=dayContext(d);
+const eta=T.eta||OL.composeETA(d,{startDate:T.startDT});
+const water=OL.recommendedWater(d), gap=OL.longestWaterGap(d), fc=OL.foodCarry(d);
+const stat=(v,l)=>`<div class="sc"><div class="sv">${v}</div><div class="sl">${l}</div></div>`;
+const etaRow=(p)=>`<div class="eta-row"><div class="el">${p.label}<span class="tag">${p.kind}</span></div><div class="ev">${dur(p.hours)}</div></div>`;
+const ps=(k,v)=>`<div class="prep-static"><div class="pk">${k}</div><div class="pv">${v}</div></div>`;
+const prepBox=(id,label)=>{const ck=prep['d'+d.d+'_'+id]?'checked':'';return `<label class="prep-item"><input type="checkbox" ${ck} onchange="togglePrep('d${d.d}_${id}',this.checked)"><span class="pk">${label}</span></label>`;};
+
+const bailout = T.sunsetDT ? `Reach ${esc(d.t)} before dark (~${clk(T.sunsetDT)}); otherwise camp early per fallback` : 'Set start date for daylight-based threshold';
+
+document.getElementById('prep-body').innerHTML=`
+<div class="sec" style="margin-top:2px">Day overview</div>
+<div class="stats">${stat(d.km.toFixed(1),'km')}${stat(d.eg+'m','Climb')}${stat(dur(eta.movingH),'Moving')}${stat('D'+d.d+'/10','Day')}${stat(Math.round(CUM[cur+1])+'km','Trip')}</div>
+
+<div class="sec" style="margin-top:14px">Time budget <span class="hint">calculated vs configured</span></div>
+<div class="card">
+${eta.parts.map(etaRow).join('')}
+<div class="eta-row total"><div class="el">Total expected elapsed</div><div class="ev">${dur(eta.totalH)}</div></div>
+${T.startDT?`<div class="eta-row"><div class="el">Earliest realistic finish<span class="tag">calc</span></div><div class="ev">${finishClock(eta.earliestFinish)}</div></div><div class="eta-row"><div class="el">Planned finish<span class="tag">calc</span></div><div class="ev">${finishClock(eta.finishDate)}</div></div>`:''}
+</div>
+
+<div class="sec" style="margin-top:14px">Supplies &amp; thresholds <span class="hint">derived</span></div>
+<div class="card">
+${ps('Recommended starting water',water.litres+' L <span style="color:var(--faint)">(dry gap '+water.gapKm+' km)</span>')}
+${ps('Longest reliable water gap',gap.km+' km <span style="color:var(--faint)">(km '+Math.round(gap.fromKm)+'–'+Math.round(gap.toKm)+')</span>')}
+${ps('Food carry',(fc.carry?'⚠ Carry meals':'✓ Food en route')+' <span style="color:var(--faint)">'+esc(fc.reason)+'</span>')}
+${ps('Key bailout',bailout)}
+${ps('Weather last updated',T.wxUpdated?T.wxUpdated:'—')}
+</div>
+
+<div class="sec" style="margin-top:14px">Departure checklist</div>
+<div class="card" style="padding-top:2px;padding-bottom:2px">
+${prepBox('phone','Phone charged')}
+${prepBox('powerbank','Power bank charged')}
+${prepBox('gpx','Offline GPX downloaded')}
+${prepBox('map','Offline map cached (browse today’s map)')}
+${prepBox('emg','Emergency info reviewed')}
+</div>
+
+<div class="sec" style="margin-top:14px">Progress <span class="hint">from checked stops / manual km</span></div>
+<div class="card">
+${ps('Completed today',c.prog.completedKm+' km'+(c.prog.remainingGain?'':''))}
+${ps('Remaining today',c.prog.remainingKm+' km · '+c.prog.remainingGain+' m↑')}
+${c.variance?ps('Schedule',(c.variance.ahead?'✓ ~'+c.variance.deltaMin+' min ahead':'⚠ ~'+Math.abs(c.variance.deltaMin)+' min behind')):''}
+<div class="prep-static"><div class="pk">Manual current km <span style="color:var(--faint)">(optional)</span></div><div class="pv"><input type="number" min="0" max="${d.km}" step="0.5" value="${manualKmFor(d)!=null?manualKmFor(d):''}" onchange="setManualKm(this.value)" style="width:80px;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:8px;font-size:14px"></div></div>
+</div>
+
+<div class="sec" style="margin-top:14px">Offline status</div>
+<div class="card" id="offline-status"><div class="prep-static"><div class="pk">Checking…</div></div></div>
+`;
+updateOffline();
+}
+
+// ═══════════════════════════════════
+// OFFLINE STATUS (accurate; never claims resources it can't verify)
+// ═══════════════════════════════════
+async function updateOffline(){
+const box=document.getElementById('offline-status'); if(!box)return;
+const row=(icon,k,v)=>`<div class="prep-static"><div class="pk">${icon} ${k}</div><div class="pv" style="font-weight:400;color:var(--muted)">${v}</div></div>`;
+const swOn = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
+let tiles=0, hasSW=false;
+try{ const c=await caches.open('olavsleden-tiles-v1'); tiles=(await c.keys()).length; }catch(e){}
+try{ hasSW = (await caches.keys()).some(n=>n.indexOf('olavsleden-shell')===0); }catch(e){}
+const online = navigator.onLine;
+const rows=[
+row(swOn||hasSW?'✓':'○','Day data &amp; route', swOn||hasSW?'Cached — works offline':'Will cache after first load/reload'),
+row('✓','GPX export','Generated on device — always offline'),
+row('✓','Emergency info','Stored in app — always offline'),
+row(tiles>0?'✓':'○','Map tiles', tiles>0?tiles+' tiles cached':'Browse the map online to cache tiles'),
+row('⚠','Weather', online?'Live (needs connection); last fetch cached':'Offline — showing last cached forecast if any'),
+row('•','Last update', T.wxUpdated?('Weather '+T.wxUpdated):'App loaded this session')
+];
+box.innerHTML=rows.join('');
 }
 
 // ═══════════════════════════════════
@@ -394,34 +840,56 @@ const ELEV_CACHE_KEY='olavsleden_elev_cache_v1';
 let elevCache={};
 try{ elevCache = JSON.parse(localStorage.getItem(ELEV_CACHE_KEY)||'{}'); }catch(e){ elevCache={}; }
 
+const EL_W=300, EL_H=120, EL_PAD=4;
+function setYAxis(labels){ document.getElementById('elev-yax').innerHTML=labels.map(l=>`<span>${l}</span>`).join(''); }
+function progressMarker(d){
+const p=OL.dayProgress(d,checks,manualKmFor(d));
+if(!p.started) return '';
+const x=(p.fraction*EL_W).toFixed(1);
+return `<line x1="${x}" y1="0" x2="${x}" y2="${EL_H}" stroke="var(--blue)" stroke-width="1.5" stroke-dasharray="3,3"/><circle cx="${x}" cy="8" r="3" fill="var(--blue)"/>`;
+}
+function renderClimbMeta(d){
+const climbs=OL.majorClimbs(d.profile).slice(0,3);
+document.getElementById('elev-climbs').innerHTML=climbs.map(c=>
+`<span class="climb-chip">↗ km ${Math.round(c.fromKm)}–${Math.round(c.toKm)} · +${c.gain} m</span>`).join('')
+|| '<span style="font-family:-apple-system,sans-serif;font-size:11px;color:var(--faint)">No single major climb — ascent is spread out</span>';
+const p=OL.dayProgress(d,checks,manualKmFor(d));
+document.getElementById('profile-stats').innerHTML=
+`<span>Total ascent <b>${d.eg} m</b></span>`+
+(climbs[0]?`<span>Biggest climb <b>+${climbs[0].gain} m</b></span>`:'')+
+(p.started?`<span>Remaining <b>${p.remainingGain} m↑</b></span>`:'');
+}
 function drawProfile(d){
-drawGainProfile(d); // fast, always works, cumulative gain only (see note above)
-document.getElementById('profile-note').textContent = 'Showing cumulative climb (official data) -- fetching real terrain profile…';
+drawGainProfile(d); // fast, always works; cumulative-gain fallback
+renderClimbMeta(d);
+document.getElementById('profile-note').textContent = 'Cumulative climb (official data) — fetching real terrain contour…';
 loadRealProfile(d);
 }
 
+// Fallback view: cumulative gain (monotonic). Gets a proper metre scale on the
+// y-axis so it is readable rather than a near-flat line.
 function drawGainProfile(d){
 const svg=document.getElementById('elev-svg');
-const W=300,H=56,pad=2;
 const maxKm=d.profile[d.profile.length-1][0];
 const maxEg=Math.max(...d.profile.map(p=>p[1]),1);
-document.getElementById('profile-max').textContent=`peak +${maxEg}m`;
-let path=`M0,${H-pad}`;
+document.getElementById('profile-max').textContent=`↑ ${d.eg} m total climb`;
+setYAxis([`+${maxEg} m`, `+${Math.round(maxEg/2)} m`, '0 m']);
+let path=`M0,${EL_H-EL_PAD}`;
 d.profile.forEach(([km,eg])=>{
-const x=(km/maxKm)*W;
-const y=H-pad-(eg/maxEg)*(H-2*pad);
+const x=(km/maxKm)*EL_W;
+const y=EL_H-EL_PAD-(eg/maxEg)*(EL_H-2*EL_PAD);
 path+=` L${x.toFixed(1)},${y.toFixed(1)}`;
 });
-path+=` L${W},${H-pad} Z`;
-svg.innerHTML=`<path d="${path}" fill="${d.c}33" stroke="${d.c}" stroke-width="2" stroke-linejoin="round"/>`;
+path+=` L${EL_W},${EL_H-EL_PAD} Z`;
+svg.innerHTML=`<path d="${path}" fill="${d.c}33" stroke="${d.c}" stroke-width="2" stroke-linejoin="round"/>${progressMarker(d)}`;
 }
 
 async function loadRealProfile(d){
 const cacheKey = `d${d.d}_${d.route.length}`;
 if(elevCache[cacheKey]){ renderRealProfile(d, elevCache[cacheKey]); return; }
 try{
-// sample ~20 evenly spaced points along the route
-const n=20;
+// sample ~24 evenly spaced points along the route
+const n=24;
 const pts=[];
 for(let i=0;i<=n;i++){
 const t=i/n*(d.route.length-1);
@@ -440,27 +908,29 @@ elevCache[cacheKey]=elevations;
 try{ localStorage.setItem(ELEV_CACHE_KEY, JSON.stringify(elevCache)); }catch(e){}
 renderRealProfile(d, elevations);
 }catch(e){
-document.getElementById('profile-note').textContent = 'Real terrain data unavailable right now -- showing cumulative climb only (always trends up, not a true contour).';
+document.getElementById('profile-note').textContent = 'Real terrain contour unavailable offline — showing cumulative climb (official figures below are exact regardless).';
 }
 }
 
 function renderRealProfile(d, elevations){
 if(cur !== D.indexOf(d)) return; // user already moved to another day
 const svg=document.getElementById('elev-svg');
-const W=300,H=56,pad=2;
 const minE=Math.min(...elevations), maxE=Math.max(...elevations);
 const range=Math.max(maxE-minE,1);
 const n=elevations.length-1;
-let path=`M0,${(H-pad-((elevations[0]-minE)/range)*(H-2*pad)).toFixed(1)}`;
+// modest vertical fill of the box = presentation-only exaggeration; the metre
+// scale on the y-axis keeps the real numbers honest.
+let path=`M0,${(EL_H-EL_PAD-((elevations[0]-minE)/range)*(EL_H-2*EL_PAD)).toFixed(1)}`;
 elevations.forEach((e,i)=>{
-const x=(i/n)*W;
-const y=H-pad-((e-minE)/range)*(H-2*pad);
+const x=(i/n)*EL_W;
+const y=EL_H-EL_PAD-((e-minE)/range)*(EL_H-2*EL_PAD);
 path+=` L${x.toFixed(1)},${y.toFixed(1)}`;
 });
-path+=` L${W},${H-pad} L0,${H-pad} Z`;
-svg.innerHTML=`<path d="${path}" fill="${d.c}33" stroke="${d.c}" stroke-width="2" stroke-linejoin="round"/>`;
-document.getElementById('profile-max').textContent=`${Math.round(minE)}-${Math.round(maxE)}m alt.`;
-document.getElementById('profile-note').textContent = 'Real terrain profile (sampled along route) -- shape shows actual ups and downs, not just cumulative climb.';
+path+=` L${EL_W},${EL_H-EL_PAD} L0,${EL_H-EL_PAD} Z`;
+svg.innerHTML=`<path d="${path}" fill="${d.c}33" stroke="${d.c}" stroke-width="2" stroke-linejoin="round"/>${progressMarker(d)}`;
+document.getElementById('profile-max').textContent=`${Math.round(minE)}–${Math.round(maxE)} m alt.`;
+setYAxis([`${Math.round(maxE)} m`, `${Math.round((maxE+minE)/2)} m`, `${Math.round(minE)} m`]);
+document.getElementById('profile-note').textContent = 'Real terrain contour (sampled along route). Vertical scale exaggerated for readability — see metre labels. Official total ascent below is exact.';
 }
 
 // ═══════════════════════════════════
@@ -520,6 +990,8 @@ btn.classList.add('on');
 btn.textContent='📍 Tracking…';
 gpsWatchId=navigator.geolocation.watchPosition(pos=>{
 const ll=[pos.coords.latitude,pos.coords.longitude];
+lastGPS=ll;
+if(document.getElementById('emg-modal').classList.contains('open')) openEmergency();
 if(!gpsMarker){
 const ico=L.divIcon({html:`<div style="width:14px;height:14px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 10px var(--blue)"></div>`,className:'',iconSize:[14,14],iconAnchor:[7,7]});
 gpsMarker=L.marker(ll,{icon:ico,zIndexOffset:1000}).addTo(map);
@@ -562,29 +1034,27 @@ const v=document.getElementById('start-date').value;
 if(!v)return;
 startDate=new Date(v+'T12:00:00');
 const d=D[cur];
-const date=new Date(startDate);date.setDate(date.getDate()+cur);
+T.dayDate=dayDateFor(cur);
 document.getElementById('trip-date').textContent=
-date.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-
-// Naismith: 1hr per 4km flat + 1hr per 600m ascent -- this is MOVING time only,
-// it does not include breaks, lunch stops, or photo stops. Add roughly
-// 10-15 min per key stop you plan to actually pause at.
-const movingHrs = d.km/4 + d.eg/600;
-document.getElementById('s-t').textContent=`~${movingHrs.toFixed(1)}h`;
+T.dayDate.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 
 const timeVal=document.getElementById('start-time').value||'06:00';
 const [hh,mm]=timeVal.split(':').map(Number);
-const finish=new Date(date); finish.setHours(hh,mm,0,0);
-// ETA assumes ~15min per stop as a rough buffer on top of moving time
-const stopBufferHrs = (d.stops.length * 15)/60;
-finish.setTime(finish.getTime()+(movingHrs+stopBufferHrs)*3600*1000);
-document.getElementById('eta-badge').textContent=`ETA ~${finish.toTimeString().slice(0,5)} (incl. stops)`;
+T.startDT=new Date(T.dayDate); T.startDT.setHours(hh,mm,0,0);
 
-const {sr,ss,hrsDay}=sunTimes(d.mid[0],d.mid[1],date);
+// ETA composition (moving + planned stops + contingency) — see lib.js.
+T.eta=OL.composeETA(d,{startDate:T.startDT});
+
+const {sr,ss,hrsDay,srMin,ssMin}=sunTimes(d.mid[0],d.mid[1],T.dayDate);
 document.getElementById('sr').textContent=sr;
 document.getElementById('ss').textContent=ss;
 document.getElementById('sf').style.width=(hrsDay/24*100).toFixed(0)+'%';
-fetchWx(d,date);
+const minToDate=(base,min)=>{const x=new Date(base);x.setHours(0,0,0,0);return new Date(x.getTime()+min*60000);};
+T.sunriseDT = srMin!=null?minToDate(T.dayDate,srMin):null;
+T.sunsetDT  = ssMin!=null?minToDate(T.dayDate,ssMin):null;
+
+fetchWx(d,T.dayDate);
+renderOps(d); renderNextCard(d); renderPrep(d);
 }
 
 // Sweden and Norway both use CET/CEST on the same schedule (EU rule: DST from
@@ -615,12 +1085,13 @@ const decl = 0.006918-0.399912*Math.cos(gamma)+0.070257*Math.sin(gamma)
 const zenith = 90.833*D2R;
 const cosHA = (Math.cos(zenith)/(Math.cos(lat*D2R)*Math.cos(decl))) - Math.tan(lat*D2R)*Math.tan(decl);
 const fmt=m=>{m=((m%1440)+1440)%1440;const H=Math.floor(m/60),M=Math.round(m%60);return`${String(H).padStart(2,'0')}:${String(M<60?M:0).padStart(2,'0')}`};
-if(cosHA>1) return{sr:'Polar night',ss:'—',hrsDay:0};
-if(cosHA<-1) return{sr:'00:00',ss:'24:00',hrsDay:24};
+if(cosHA>1) return{sr:'Polar night',ss:'—',hrsDay:0,srMin:null,ssMin:null};
+if(cosHA<-1) return{sr:'00:00',ss:'24:00',hrsDay:24,srMin:0,ssMin:1439};
 const ha = Math.acos(cosHA)/D2R;
 const sunriseMin = 720 - 4*(lon+ha) - eqtime + tzOffset*60;
 const sunsetMin = 720 - 4*(lon-ha) - eqtime + tzOffset*60;
-return{sr:fmt(sunriseMin), ss:fmt(sunsetMin), hrsDay:(ha*2)/15};
+const wrap=m=>((m%1440)+1440)%1440;
+return{sr:fmt(sunriseMin), ss:fmt(sunsetMin), hrsDay:(ha*2)/15, srMin:wrap(sunriseMin), ssMin:wrap(sunsetMin)};
 }
 
 // ═══════════════════════════════════
@@ -642,7 +1113,7 @@ try{
 const r=await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${d.mid[0].toFixed(2)}&lon=${d.mid[1].toFixed(2)}`);
 const data=await r.json();wxCache[key]=data;renderWx(data,date,el);
 }catch(e){
-el.innerHTML=`<a href="https://www.yr.no" target="_blank" style="color:var(--accent);font-family:sans-serif;font-size:12px">Check yr.no →</a>`;
+el.innerHTML=`<a href="https://www.yr.no" target="_blank" style="color:var(--accent);font-family:-apple-system,sans-serif;font-size:13px">⚠ Offline — check yr.no when connected →</a>`;
 }
 }
 function renderWx(data,date,el){
@@ -657,11 +1128,15 @@ const ico=sym.includes('clearsky')?'☀️':sym.includes('fair')?'🌤':sym.incl
 sym.includes('cloudy')?'☁️':sym.includes('rain')?'🌧':sym.includes('snow')?'❄️':'🌤';
 el.innerHTML=`
 <div class="wx-item">${ico} <b>${Math.round(ins.air_temperature)}°C</b></div>
-<div class="wx-item">💨 ${Math.round(ins.wind_speed)}m/s</div>
-<div class="wx-item">🌧 ${(n6?.details?.precipitation_amount??0).toFixed(1)}mm</div>
+<div class="wx-item">💨 ${Math.round(ins.wind_speed)} m/s</div>
+<div class="wx-item">🌧 ${(n6?.details?.precipitation_amount??0).toFixed(1)} mm</div>
 <div class="wx-item">💦 ${Math.round(ins.relative_humidity)}%</div>`;
+const now=new Date();
+T.wxUpdated=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+const upd=document.getElementById('wx-upd'); if(upd) upd.textContent='updated '+T.wxUpdated;
+const off=document.getElementById('offline-status'); if(off) updateOffline();
 }catch(e){
-el.innerHTML=`<a href="https://www.yr.no" target="_blank" style="color:var(--accent);font-family:sans-serif;font-size:12px">Check yr.no →</a>`;
+el.innerHTML=`<a href="https://www.yr.no" target="_blank" style="color:var(--accent);font-family:-apple-system,sans-serif;font-size:13px">Check yr.no →</a>`;
 }
 }
 
@@ -672,10 +1147,22 @@ function openEmergency(){
 const d=D[cur];
 const list = EMERGENCY[d.country];
 const countryName = d.country==='SE'?'Sweden':'Norway';
+// Position: live GPS if tracking, else the day midpoint (clearly labelled).
+const coord = lastGPS || d.mid;
+const coordSrc = lastGPS ? 'Live GPS fix' : 'Day midpoint (turn on “Track me” for a live fix)';
+// Nearest known waypoint to that position (haversine over stop positions).
+let nearest=null, best=1e9;
+d.stops.forEach(s=>{ const p=lerp(d.route,Math.min(1,s.km/d.km)); const dist=haversine(coord,p); if(dist<best){best=dist;nearest=s;} });
+const bailouts=d.stops.filter(s=>s.backup).map(s=>`<div style="margin-bottom:6px"><b style="display:inline;text-transform:none;letter-spacing:0;color:var(--text)">${esc(s.n)} (${s.km} km):</b> ${esc(s.backup)}</div>`);
+const rows=[];
+rows.push(`<div class="emg-row"><b>Call for help — ${countryName}</b>${list.map(r=>`<div>${esc(r.t)}: <span class="emg-call">${esc(r.v)}</span></div>`).join('')}</div>`);
+rows.push(`<div class="emg-row"><b>Your position (${esc(coordSrc)})</b>${coord[0].toFixed(4)}°N, ${coord[1].toFixed(4)}°E<br><a href="https://www.google.com/maps?q=${coord[0]},${coord[1]}" target="_blank">Open in maps →</a></div>`);
+if(nearest) rows.push(`<div class="emg-row"><b>Nearest known waypoint</b>${esc(nearest.i)} ${esc(nearest.n)} · km ${nearest.km} of day ${d.d}<br><span style="color:var(--muted)">~${best.toFixed(1)} km straight-line away</span></div>`);
+if(bailouts.length) rows.push(`<div class="emg-row"><b>Route exits / bailout notes</b>${bailouts.join('')}</div>`);
+rows.push(`<div class="emg-row"><b>Offline</b>These numbers, your route and this screen work offline. Weather and live map tiles need signal — which is unreliable in the mountains (esp. D5–D7). Share your day plan before setting out and carry a power bank.</div>`);
 document.getElementById('emg-body').innerHTML =
-`<div style="font-family:sans-serif;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Currently in: ${countryName} (Day ${d.d})</div>` +
-list.map(r=>`<div class="emg-row"><b>${r.t}</b>${r.v}</div>`).join('') +
-`<div class="emg-row"><b>General advice</b>Share your day plan with someone before setting out, especially D5-D7. Carry a charged phone and, if possible, a backup power bank -- signal is unreliable in the mountains.</div>`;
+`<div style="font-family:-apple-system,sans-serif;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Currently in: ${countryName} · Day ${d.d} (${esc(d.f)} → ${esc(d.t)})</div>`+
+rows.join('');
 document.getElementById('emg-modal').classList.add('open');
 }
 function closeEmergency(){ document.getElementById('emg-modal').classList.remove('open'); }
