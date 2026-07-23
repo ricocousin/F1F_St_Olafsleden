@@ -12,12 +12,13 @@
 //  - Weather (api.met.no): network-first, falling back to the last cached
 //    response if offline -- better a stale forecast than none.
 
-const SHELL_CACHE = 'olavsleden-shell-v2';   // bumped: v1 had the HTML caching bug
+const SHELL_CACHE = 'olavsleden-shell-v3';   // bumped: precache lib.js
 const TILE_CACHE = 'olavsleden-tiles-v1';
 const WX_CACHE = 'olavsleden-wx-v1';
 
 const STATIC_URLS = [
   './manifest.json',
+  './lib.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
 ];
